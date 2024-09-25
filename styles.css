@@ -1,0 +1,149 @@
+/* Pocket and Size Buttons */
+.option-buttons button {
+  margin: 5px;
+  padding: 10px 15px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background-color: #f8f8f8;
+  border-radius: 4px;
+}
+
+.option-buttons button.selected {
+  background-color: #007BFF;
+  color: #fff;
+  border-color: #007BFF;
+}
+
+/* DOTW Buttons */
+.option-buttons.dotw-buttons button {
+  margin: 3px;
+  padding: 5px 10px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background-color: #f8f8f8;
+  border-radius: 4px;
+}
+
+.option-buttons.dotw-buttons button.selected {
+  background-color: #28a745;
+  color: #fff;
+  border-color: #28a745;
+}
+
+/* Color Swatches */
+.color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.color-swatch {
+  margin: 5px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.color-swatch input {
+  display: none;
+}
+
+.color-swatch .swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 5px;
+  display: block;
+  margin: 0 auto 5px;
+  border: 2px solid transparent;
+  opacity: 1; /* Ensure default opacity is 1 */
+}
+
+.color-swatch.selected .swatch {
+  border-color: #007BFF;
+}
+
+.color-swatch .color-name {
+  font-size: 12px;
+  display: block;
+  max-width: 80px;
+  word-wrap: break-word;
+}
+
+/* Engraving Inputs */
+.engravings label {
+  display: block;
+  margin-top: 10px;
+}
+
+/* General Styles */
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+}
+
+h1, h2 {
+  margin-bottom: 20px;
+}
+
+h3 {
+  margin-top: 30px;
+}
+
+hr {
+  margin-top: 20px;
+}
+
+button {
+  padding: 10px 15px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+#notes-output {
+  background-color: #f0f0f0;
+  padding: 15px;
+  border-radius: 4px;
+  max-width: 600px;
+  overflow-x: auto;
+}
+
+/* Emoji Buttons */
+.emoji-button {
+  background: none;
+  border: none;
+  font-size: 2em;
+  cursor: pointer;
+  padding: 0.2em;
+  line-height: 1;
+}
+
+.emoji-button:hover {
+  opacity: 0.8;
+}
+
+.remove-button {
+  float: right;
+}
+
+/* Highlighted section */
+.highlight {
+  outline: 2px solid #ff9800; /* Orange outline */
+  padding: 5px;
+}
+
+/* Highlight when only one color match remains */
+.highlight.single-match {
+  outline: 2px solid #28a745; /* Green outline */
+}
+
+/* Color swatches matching input */
+.color-swatch.match {
+  opacity: 1;
+}
+
+.color-swatch:not(.match) {
+  opacity: 0.3;
+}
+
+.color-swatch.first-match {
+  border: 2px solid #ff9800;
+}
