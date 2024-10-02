@@ -473,7 +473,7 @@ function addCase() {
 
   // Generate buttons for Size options
   const sizeOptionsDiv = caseDiv.querySelector(`#size-options-${caseId}`);
-  const sizes = ['PILL', 'VITAMIN', 'XL'];
+  const sizes = ['PILL', 'VITAMIN', ' VITAMIN XL'];
   sizes.forEach(size => {
     const button = document.createElement('button');
     button.type = 'button';
