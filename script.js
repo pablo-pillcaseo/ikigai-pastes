@@ -193,6 +193,7 @@ function handleSizeSelection(event) {
 
   if (key === '1' || key === 'j') selectedSizeIndex = 0;
   else if (key === '2' || key === 'k') selectedSizeIndex = 1;
+  else if (key === '3' || key === 'l') selectedSizeIndex = 2;
 
   if (selectedSizeIndex !== -1) {
     const sizeOptionsDiv = document.querySelector(`#size-options-${activeCaseId}`);
@@ -472,7 +473,7 @@ function addCase() {
 
   // Generate buttons for Size options
   const sizeOptionsDiv = caseDiv.querySelector(`#size-options-${caseId}`);
-  const sizes = ['PILL', 'VITAMIN'];
+  const sizes = ['PILL', 'VITAMIN', 'XL'];
   sizes.forEach(size => {
     const button = document.createElement('button');
     button.type = 'button';
