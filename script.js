@@ -174,6 +174,7 @@ function handlePocketSelection(event) {
   else if (key === '2' || key === 'k') selectedPocketIndex = 1;
   else if (key === '3' || key === 'l') selectedPocketIndex = 2;
   else if (key === '4' || key === ';') selectedPocketIndex = 3;
+  else if (key === '5' || key === "'") selectedPocketIndex = 4;
 
   if (selectedPocketIndex !== -1) {
     const pocketOptionsDiv = document.querySelector(`#pocket-options-${activeCaseId}`);
@@ -457,7 +458,7 @@ function addCase() {
 
   // Generate buttons for Pocket options
   const pocketOptionsDiv = caseDiv.querySelector(`#pocket-options-${caseId}`);
-  const pockets = ['MISSION', 'WEEKLY', 'AMPM', '2-WEEK'];
+  const pockets = ['NANO', 'MISSION', 'WEEKLY', 'AMPM', '2-WEEK'];
   pockets.forEach(pocket => {
     const button = document.createElement('button');
     button.type = 'button';
@@ -574,7 +575,7 @@ function updateCaseType(caseId) {
         <input type="text" id="lid-${caseId}" placeholder="Optional">
       </label>
     `;
-    if (pocket !== 'MISSION') {
+    if (pocket !== 'MISSION' && pocket !== 'NANO') {
       engravingsHTML += generateDOTWSelection(caseId);
     }
     engravingsDiv.innerHTML = engravingsHTML;
