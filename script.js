@@ -3,7 +3,7 @@ const cases = [];
 
 let keyboardMode = false;
 let activeCaseId = null;
-let activeSection = null; // 'pocket', 'size', 'color', 'lid', 'first-lid', 'second-lid', 'custom-modification'
+let activeSection = null; // 'pocket', 'size', 'color', 'lid', 'first-lid', 'second-lid'
 let colorInput = ''; // To capture color name input during keyboard navigation
 let awaitingColorSelection = false; // Indicates if we're waiting for the user to press Enter to select a color
 
@@ -45,6 +45,14 @@ function exitKeyboardMode() {
   awaitingColorSelection = false; // Reset the flag
   removeHighlights();
   resetColorSwatches(); // Reset color swatch highlights
+
+  // **Reset Custom Modifications Fields**
+  cases.forEach(caseId => {
+    const customModInput = document.getElementById(`custom-modifications-${caseId}`);
+    if (customModInput) {
+      customModInput.value = '';
+    }
+  });
 }
 
 function resetColorSwatches() {
@@ -98,8 +106,16 @@ function highlightActiveSection() {
       secondLidInput.classList.add('highlight');
       secondLidInput.focus();
       break;
-    case 'custom-modification':
-      const customModInput = caseDiv.querySelector(`#custom-modification-${activeCaseId}`);
+    case 'dotw':
+      const dotwOptionsDiv = caseDiv.querySelector(`#dotw-options-${activeCaseId}`);
+      dotwOptionsDiv.classList.add('highlight');
+      const customModDiv = caseDiv.querySelector(`#custom-modifications-div-${activeCaseId}`);
+      if (customModDiv) {
+        customModDiv.classList.add('highlight');
+      }
+      break;
+    case 'custom-modifications':
+      const customModInput = caseDiv.querySelector(`#custom-modifications-${activeCaseId}`);
       customModInput.classList.add('highlight');
       customModInput.focus();
       break;
@@ -131,10 +147,20 @@ function scrollToActiveSection() {
       elementToScrollTo = caseDiv.querySelector(`#colors-${activeCaseId}`);
       break;
     case 'lid':
+      elementToScrollTo = caseDiv.querySelector(`#lid-${activeCaseId}`);
+      break;
     case 'first-lid':
+      elementToScrollTo = caseDiv.querySelector(`#first-lid-${activeCaseId}`);
+      break;
     case 'second-lid':
-    case 'custom-modification':
-      elementToScrollTo = caseDiv.querySelector(`#${activeSection}-${activeCaseId}`);
+      elementToScrollTo = caseDiv.querySelector(`#second-lid-${activeCaseId}`);
+      break;
+    case 'dotw':
+      elementToScrollTo = caseDiv.querySelector(`#dotw-options-${activeCaseId}`);
+      const customModDiv = caseDiv.querySelector(`#custom-modifications-div-${activeCaseId}`);
+      if (customModDiv) {
+        elementToScrollTo = customModDiv;
+      }
       break;
   }
 
@@ -159,12 +185,14 @@ function handleKeyboardInput(event) {
     case 'lid':
     case 'first-lid':
     case 'second-lid':
-    case 'custom-modification':
-      // Allow typing in lid engraving and custom modification inputs
+      // Allow typing in lid engraving inputs
       if (event.key === 'Enter') {
         event.preventDefault();
         moveToNextSection();
       }
+      break;
+    case 'dotw':
+      handleDOTWSelection(event);
       break;
   }
 }
@@ -244,6 +272,25 @@ function handleColorSelection(event) {
   }
 }
 
+function handleDOTWSelection(event) {
+  // For this implementation, keyboard navigation for DOTW can be handled as needed.
+  // Since DOTW selection is done via buttons, you might want to allow arrow keys or other shortcuts.
+  // For simplicity, we'll handle 'Enter' to select the currently highlighted DOTW option.
+
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    // Assuming that one DOTW option is highlighted or focused, simulate a click.
+    const caseDiv = document.getElementById(activeCaseId);
+    const selectedButton = caseDiv.querySelector(`#dotw-options-${activeCaseId} .selected`);
+    if (selectedButton) {
+      // Move to Custom Modifications section
+      activeSection = 'custom-modifications';
+      highlightActiveSection();
+      scrollToActiveSection();
+    }
+  }
+}
+
 function moveToNextSection() {
   if (activeSection === 'pocket') {
     activeSection = 'size';
@@ -258,39 +305,38 @@ function moveToNextSection() {
         // First color just selected, now move to second color
         colorInput = ''; // Reset color input
         awaitingColorSelection = false;
-        activeSection = 'first-lid';
         highlightActiveSection();
         scrollToActiveSection();
+        // Remain in 'color' section to filter second color
         return;
       } else if (!secondColorSelected) {
         // Second color not selected yet, remain in 'color' section
         colorInput = ''; // Ensure color input is reset
         awaitingColorSelection = false;
-        activeSection = 'second-lid';
         highlightActiveSection();
         scrollToActiveSection();
         return;
       } else {
-        // Both colors selected, move to first lid engraving
-        activeSection = 'first-lid';
+        // Both colors selected, move to DOTW
+        activeSection = 'dotw';
       }
     } else {
-      // For other cases, move to lid engraving
-      activeSection = 'lid';
+      // For other cases, move to DOTW
+      activeSection = 'dotw';
     }
-  } else if (activeSection === 'lid' || activeSection === 'first-lid') {
+  } else if (activeSection === 'lid' || activeSection === 'first-lid' || activeSection === 'second-lid') {
     const pocket = document.querySelector(`#pocket-options-${activeCaseId} .selected`)?.innerText;
     if (pocket === 'AMPM' || pocket === '2-WEEK') {
-      activeSection = 'second-lid';
+      activeSection = 'dotw';
     } else {
-      // For other cases, move to custom modification
-      activeSection = 'custom-modification';
+      // For other cases, process is complete
+      exitKeyboardMode();
     }
-  } else if (activeSection === 'second-lid') {
-    // Move to custom modification
-    activeSection = 'custom-modification';
-  } else if (activeSection === 'custom-modification') {
-    // Process is complete
+  } else if (activeSection === 'dotw') {
+    // After DOTW, move to Custom Modifications
+    activeSection = 'custom-modifications';
+  } else if (activeSection === 'custom-modifications') {
+    // After Custom Modifications, process is complete
     exitKeyboardMode();
   } else {
     exitKeyboardMode();
@@ -456,7 +502,7 @@ function addCase() {
     
     <hr>
   `;
-
+  
   const removeButton = document.createElement('button');
   removeButton.className = 'emoji-button remove-button';
   removeButton.innerText = '❌';
@@ -485,7 +531,7 @@ function addCase() {
   sizes.forEach(size => {
     const button = document.createElement('button');
     button.type = 'button';
-    button.innerText = size.trim();
+    button.innerText = size;
     button.onclick = () => {
       sizeOptionsDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
       button.classList.add('selected');
@@ -555,9 +601,6 @@ function updateCaseType(caseId) {
       <label>${secondLidLabel}:
         <input type="text" id="second-lid-${caseId}" placeholder="Optional">
       </label>
-      <label>Custom Modification:
-        <input type="text" id="custom-modification-${caseId}" placeholder="Optional">
-      </label>
     `;
     engravingsDiv.innerHTML += generateDOTWSelection(caseId);
     setupDOTWSelection(caseId);
@@ -584,16 +627,12 @@ function updateCaseType(caseId) {
       <label>Lid Engraving:
         <input type="text" id="lid-${caseId}" placeholder="Optional">
       </label>
-      <label>Custom Modification:
-        <input type="text" id="custom-modification-${caseId}" placeholder="Optional">
-      </label>
     `;
     if (pocket !== 'MISSION' && pocket !== 'NANO') {
       engravingsHTML += generateDOTWSelection(caseId);
     }
     engravingsDiv.innerHTML = engravingsHTML;
     setupDOTWSelection(caseId);
-
   }
 }
 
@@ -604,42 +643,38 @@ function generateDOTWSelection(caseId) {
   days.forEach(day => {
     dotwHTML += `<button type="button" data-day="${day}">${day}</button>`;
   });
-  dotwHTML += `</div>`;
+  dotwHTML += `</div>
+  
+  <!-- **Added Custom Modifications Field** -->
+  <div id="custom-modifications-div-${caseId}" class="custom-modifications">
+    <label>Custom Modifications:
+      <input type="text" id="custom-modifications-${caseId}" placeholder="Optional">
+    </label>
+  </div>
+  `;
   return dotwHTML;
 }
 
-  function setupDOTWSelection(caseId) {
-    const dotwOptionsDiv = document.getElementById(`dotw-options-${caseId}`);
-    if (dotwOptionsDiv) {
-      const buttons = dotwOptionsDiv.querySelectorAll('button');
-      buttons.forEach(button => {
-        button.addEventListener('click', () => {
-          if (button.disabled) return; // Do nothing if button is disabled
-  
-          buttons.forEach(btn => btn.classList.remove('selected'));
-          button.classList.add('selected');
-  
-          const customModInput = document.getElementById(`custom-modification-${caseId}`);
-          if (button.getAttribute('data-day') !== 'None') {
-            // Show Custom Modification input
-            customModInput.parentElement.style.display = 'block';
-          } else {
-            // Hide Custom Modification input and clear its value
-            customModInput.parentElement.style.display = 'none';
-            customModInput.value = '';
-          }
-        });
-  
-        // Select 'None' by default and hide Custom Modification input
-        if (button.getAttribute('data-day') === 'None') {
-          button.classList.add('selected');
-          const customModInput = document.getElementById(`custom-modification-${caseId}`);
-          if (customModInput) {
-            customModInput.parentElement.style.display = 'none';
-          }
-        }
+function setupDOTWSelection(caseId) {
+  const dotwOptionsDiv = document.getElementById(`dotw-options-${caseId}`);
+  if (dotwOptionsDiv) {
+    const buttons = dotwOptionsDiv.querySelectorAll('button');
+    buttons.forEach(button => {
+      button.addEventListener('click', () => {
+        buttons.forEach(btn => btn.classList.remove('selected'));
+        button.classList.add('selected');
+
+        // After selecting DOTW, move to Custom Modifications
+        activeSection = 'custom-modifications';
+        highlightActiveSection();
+        scrollToActiveSection();
       });
-    }
+
+      // Select 'None' by default
+      if (button.getAttribute('data-day') === 'None') {
+        button.classList.add('selected');
+      }
+    });
   }
 }
 
@@ -730,7 +765,6 @@ function generateColorSwatches(containerId, inputName) {
       if (pocket === 'AMPM' || pocket === '2-WEEK') {
         const firstLidInput = document.getElementById(`first-lid-${caseId}`);
         const secondLidInput = document.getElementById(`second-lid-${caseId}`);
-        const customModInput = document.getElementById(`custom-modification-${caseId}`);
 
         const firstLidValue = firstLidInput.value.trim();
         const secondLidValue = secondLidInput.value.trim();
@@ -748,11 +782,6 @@ function generateColorSwatches(containerId, inputName) {
           } else if (inputType === 'second') {
             secondLidInput.focus();
           }
-        }
-
-        // Additionally, if Custom Modification has text, focus on it
-        if (customModInput && customModInput.value.trim() !== '') {
-          customModInput.focus();
         }
       } else {
         // For other cases, focus on the lid engraving input
@@ -795,7 +824,8 @@ function generateAndCopyNotes() {
 
       const firstLid = document.getElementById(`first-lid-${caseId}`)?.value.trim();
       const secondLid = document.getElementById(`second-lid-${caseId}`)?.value.trim();
-      const customModification = document.getElementById(`custom-modification-${caseId}`)?.value.trim();
+
+      const customModifications = document.getElementById(`custom-modifications-${caseId}`)?.value.trim();
 
       const dotwSelectedButton = document.querySelector(`#dotw-options-${caseId} .selected`);
       const dotw = dotwSelectedButton ? dotwSelectedButton.getAttribute('data-day') : 'None';
@@ -813,32 +843,22 @@ function generateAndCopyNotes() {
       if (firstLid) {
         notes += ` = LID = ${firstLid}`;
       }
-
-      if (customModification) {
-        notes += ` (${customModification})`;
-      }
-
       notes += `\n`;
 
       // Generate notes for second part
-      notes += `${caseNumber}) ${pocket} ${secondNoteLabel} / ${secondColorUpper}`;
+      notes += `${caseNumber}) ${pocket} ${size} / ${secondNoteLabel} / ${secondColorUpper}`;
       if (secondLid) {
         notes += ` = LID = ${secondLid}`;
       }
-
-      if (customModification) {
-        notes += ` (${customModification})`;
-      }
-
       notes += `\n`;
 
-      // Append DOTW
+      // **Append DOTW with "Modified" and Custom Modifications**
       if (dotw && dotw !== 'None') {
-        if (customModification) {
-          notes += `${caseNumber}) ${pocket} ${size} = DOTW = Modified *${dotw}* (${customModification})\n`;
-        } else {
-          notes += `${caseNumber}) ${pocket} ${size} = DOTW = *${dotw}*\n`;
+        notes += `${caseNumber}) ${pocket} ${size} = DOTW = Modified *${dotw}*`;
+        if (customModifications) {
+          notes += ` (${customModifications})`;
         }
+        notes += `\n`;
       }
     } else {
       const color = document.querySelector(`input[name="color-${caseId}"]:checked`)?.value;
@@ -850,8 +870,6 @@ function generateAndCopyNotes() {
       }
 
       const lid = document.getElementById(`lid-${caseId}`)?.value.trim();
-      const customModification = document.getElementById(`custom-modification-${caseId}`)?.value.trim();
-
       const dotwSelectedButton = document.querySelector(`#dotw-options-${caseId} .selected`);
       const dotw = dotwSelectedButton ? dotwSelectedButton.getAttribute('data-day') : 'None';
 
@@ -865,20 +883,17 @@ function generateAndCopyNotes() {
       if (lid) {
         notes += ` = LID = ${lid}`;
       }
-
-      if (customModification) {
-        notes += ` (${customModification})`;
-      }
-
+      
       notes += `\n`;
 
-      // Append DOTW
+      // **Append DOTW with "Modified" and Custom Modifications (if applicable)**
       if (dotw && dotw !== 'None') {
-        if (customModification) {
-          notes += `${caseNumber}) ${pocket} ${size} / ${colorUpper} = DOTW = Modified *${dotw}* (${customModification})\n`;
-        } else {
-          notes += `${caseNumber}) ${pocket} ${size} / ${colorUpper} = DOTW = *${dotw}*\n`;
+        const customModifications = document.getElementById(`custom-modifications-${caseId}`)?.value.trim();
+        notes += `${caseNumber}) ${pocket} ${size} / ${colorUpper} = DOTW = Modified *${dotw}*`;
+        if (customModifications) {
+          notes += ` (${customModifications})`;
         }
+        notes += `\n`;
       }
     }
   });
@@ -894,5 +909,5 @@ function generateAndCopyNotes() {
     navigator.clipboard.writeText(notes).catch(err => {
       console.error('Failed to copy notes to clipboard:', err);
     });
-  } 
+  }
 }
