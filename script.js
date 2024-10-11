@@ -572,9 +572,6 @@ function updateCaseType(caseId) {
         secondLidInput.focus();
       }
     });
-
-    // Setup custom modification handling
-    setupCustomModificationHandling(caseId);
   } else {
     // Other cases: one color and optional engravings
     colorsDiv.innerHTML = `
@@ -597,8 +594,6 @@ function updateCaseType(caseId) {
     engravingsDiv.innerHTML = engravingsHTML;
     setupDOTWSelection(caseId);
 
-    // Setup custom modification handling
-    setupCustomModificationHandling(caseId);
   }
 }
 
@@ -613,52 +608,38 @@ function generateDOTWSelection(caseId) {
   return dotwHTML;
 }
 
-function setupDOTWSelection(caseId) {
-  const dotwOptionsDiv = document.getElementById(`dotw-options-${caseId}`);
-  if (dotwOptionsDiv) {
-    const buttons = dotwOptionsDiv.querySelectorAll('button');
-    buttons.forEach(button => {
-      button.addEventListener('click', () => {
-        if (button.disabled) return; // Do nothing if button is disabled
-
-        buttons.forEach(btn => btn.classList.remove('selected'));
-        button.classList.add('selected');
-      });
-
-      // Select 'None' by default
-      if (button.getAttribute('data-day') === 'None') {
-        button.classList.add('selected');
-      }
-    });
-  }
-}
-
-function setupCustomModificationHandling(caseId) {
-  const customModInput = document.getElementById(`custom-modification-${caseId}`);
-  const dotwOptionsDiv = document.getElementById(`dotw-options-${caseId}`);
-
-  if (customModInput && dotwOptionsDiv) {
-    customModInput.addEventListener('input', () => {
-      if (customModInput.value.trim() !== '') {
-        // Disable DOTW dropdown
-        dotwOptionsDiv.querySelectorAll('button').forEach(btn => {
-          btn.disabled = true;
-          btn.classList.add('disabled');
-          btn.classList.remove('selected'); // Deselect any selected DOTW option
+  function setupDOTWSelection(caseId) {
+    const dotwOptionsDiv = document.getElementById(`dotw-options-${caseId}`);
+    if (dotwOptionsDiv) {
+      const buttons = dotwOptionsDiv.querySelectorAll('button');
+      buttons.forEach(button => {
+        button.addEventListener('click', () => {
+          if (button.disabled) return; // Do nothing if button is disabled
+  
+          buttons.forEach(btn => btn.classList.remove('selected'));
+          button.classList.add('selected');
+  
+          const customModInput = document.getElementById(`custom-modification-${caseId}`);
+          if (button.getAttribute('data-day') !== 'None') {
+            // Show Custom Modification input
+            customModInput.parentElement.style.display = 'block';
+          } else {
+            // Hide Custom Modification input and clear its value
+            customModInput.parentElement.style.display = 'none';
+            customModInput.value = '';
+          }
         });
-      } else {
-        // Enable DOTW dropdown
-        dotwOptionsDiv.querySelectorAll('button').forEach(btn => {
-          btn.disabled = false;
-          btn.classList.remove('disabled');
-        });
-        // If no DOTW is selected, select 'None' by default
-        const noneButton = dotwOptionsDiv.querySelector('button[data-day="None"]');
-        if (noneButton && !dotwOptionsDiv.querySelector('.selected')) {
-          noneButton.classList.add('selected');
+  
+        // Select 'None' by default and hide Custom Modification input
+        if (button.getAttribute('data-day') === 'None') {
+          button.classList.add('selected');
+          const customModInput = document.getElementById(`custom-modification-${caseId}`);
+          if (customModInput) {
+            customModInput.parentElement.style.display = 'none';
+          }
         }
-      }
-    });
+      });
+    }
   }
 }
 
@@ -840,7 +821,7 @@ function generateAndCopyNotes() {
       notes += `\n`;
 
       // Generate notes for second part
-      notes += `${caseNumber}) ${pocket} ${size} / ${secondNoteLabel} / ${secondColorUpper}`;
+      notes += `${caseNumber}) ${pocket} ${secondNoteLabel} / ${secondColorUpper}`;
       if (secondLid) {
         notes += ` = LID = ${secondLid}`;
       }
@@ -851,9 +832,13 @@ function generateAndCopyNotes() {
 
       notes += `\n`;
 
-      // Append DOTW if not 'None' and if no custom modification is present
-      if (!customModification && dotw && dotw !== 'None') {
-        notes += `${caseNumber}) ${pocket} ${size} = DOTW = *${dotw}*\n`;
+      // Append DOTW
+      if (dotw && dotw !== 'None') {
+        if (customModification) {
+          notes += `${caseNumber}) ${pocket} ${size} = DOTW = Modified *${dotw}* (${customModification})\n`;
+        } else {
+          notes += `${caseNumber}) ${pocket} ${size} = DOTW = *${dotw}*\n`;
+        }
       }
     } else {
       const color = document.querySelector(`input[name="color-${caseId}"]:checked`)?.value;
@@ -887,9 +872,13 @@ function generateAndCopyNotes() {
 
       notes += `\n`;
 
-      // Append DOTW if not 'None' and if no custom modification is present
-      if (!customModification && dotw && dotw !== 'None') {
-        notes += `${caseNumber}) ${pocket} ${size} / ${colorUpper} = DOTW = *${dotw}*\n`;
+      // Append DOTW
+      if (dotw && dotw !== 'None') {
+        if (customModification) {
+          notes += `${caseNumber}) ${pocket} ${size} / ${colorUpper} = DOTW = Modified *${dotw}* (${customModification})\n`;
+        } else {
+          notes += `${caseNumber}) ${pocket} ${size} / ${colorUpper} = DOTW = *${dotw}*\n`;
+        }
       }
     }
   });
@@ -905,5 +894,5 @@ function generateAndCopyNotes() {
     navigator.clipboard.writeText(notes).catch(err => {
       console.error('Failed to copy notes to clipboard:', err);
     });
-  }
+  } 
 }
