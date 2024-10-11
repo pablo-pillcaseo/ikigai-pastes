@@ -548,6 +548,9 @@ function updateCaseType(caseId) {
       <label>${secondLidLabel}:
         <input type="text" id="second-lid-${caseId}" placeholder="Optional">
       </label>
+      <label>Custom Modification:
+        <input type="text" id="custom-modification-${caseId}" placeholder="Optional">
+      </label>
     `;
     engravingsDiv.innerHTML += generateDOTWSelection(caseId);
     setupDOTWSelection(caseId);
@@ -562,6 +565,9 @@ function updateCaseType(caseId) {
         secondLidInput.focus();
       }
     });
+
+    // Setup custom modification handling
+    setupCustomModificationHandling(caseId);
   } else {
     // Other cases: one color and optional engravings
     colorsDiv.innerHTML = `
@@ -574,24 +580,49 @@ function updateCaseType(caseId) {
       <label>Lid Engraving:
         <input type="text" id="lid-${caseId}" placeholder="Optional">
       </label>
+      <label>Custom Modification:
+        <input type="text" id="custom-modification-${caseId}" placeholder="Optional">
+      </label>
     `;
     if (pocket !== 'MISSION' && pocket !== 'NANO') {
       engravingsHTML += generateDOTWSelection(caseId);
     }
     engravingsDiv.innerHTML = engravingsHTML;
     setupDOTWSelection(caseId);
+
+    // Setup custom modification handling
+    setupCustomModificationHandling(caseId);
   }
 }
 
-function generateDOTWSelection(caseId) {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'None'];
-  let dotwHTML = `<label><strong>Start Day of the Week (DOTW):</strong></label>
-  <div id="dotw-options-${caseId}" class="option-buttons dotw-buttons">`;
-  days.forEach(day => {
-    dotwHTML += `<button type="button" data-day="${day}">${day}</button>`;
-  });
-  dotwHTML += `</div>`;
-  return dotwHTML;
+function setupCustomModificationHandling(caseId) {
+  const customModInput = document.getElementById(`custom-modification-${caseId}`);
+  const dotwOptionsDiv = document.getElementById(`dotw-options-${caseId}`);
+
+  if (customModInput && dotwOptionsDiv) {
+    customModInput.addEventListener('input', () => {
+      if (customModInput.value.trim() !== '') {
+        // Disable DOTW dropdown
+        dotwOptionsDiv.querySelectorAll('button').forEach(btn => {
+          btn.disabled = true;
+          btn.classList.add('disabled');
+        });
+        // Optionally, deselect any selected DOTW option
+        dotwOptionsDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+      } else {
+        // Enable DOTW dropdown
+        dotwOptionsDiv.querySelectorAll('button').forEach(btn => {
+          btn.disabled = false;
+          btn.classList.remove('disabled');
+        });
+        // If no DOTW is selected, select 'None' by default
+        const noneButton = dotwOptionsDiv.querySelector('button[data-day="None"]');
+        if (noneButton && !dotwOptionsDiv.querySelector('.selected')) {
+          noneButton.classList.add('selected');
+        }
+      }
+    });
+  }
 }
 
 function setupDOTWSelection(caseId) {
@@ -758,6 +789,7 @@ function generateAndCopyNotes() {
 
       const firstLid = document.getElementById(`first-lid-${caseId}`)?.value.trim();
       const secondLid = document.getElementById(`second-lid-${caseId}`)?.value.trim();
+      const customModification = document.getElementById(`custom-modification-${caseId}`)?.value.trim();
 
       const dotwSelectedButton = document.querySelector(`#dotw-options-${caseId} .selected`);
       const dotw = dotwSelectedButton ? dotwSelectedButton.getAttribute('data-day') : 'None';
@@ -775,6 +807,11 @@ function generateAndCopyNotes() {
       if (firstLid) {
         notes += ` = LID = ${firstLid}`;
       }
+
+      if (customModification) {
+        notes += ` (${customModification})`;
+      }
+
       notes += `\n`;
 
       // Generate notes for second part
@@ -782,10 +819,15 @@ function generateAndCopyNotes() {
       if (secondLid) {
         notes += ` = LID = ${secondLid}`;
       }
+
+      if (customModification) {
+        notes += ` (${customModification})`;
+      }
+
       notes += `\n`;
 
-      // Append DOTW if not 'None' and if applicable
-      if (dotw && dotw !== 'None') {
+      // Append DOTW if not 'None' and if no custom modification is present
+      if (!customModification && dotw && dotw !== 'None') {
         notes += `${caseNumber}) ${pocket} ${size} = DOTW = *${dotw}*\n`;
       }
     } else {
@@ -798,6 +840,8 @@ function generateAndCopyNotes() {
       }
 
       const lid = document.getElementById(`lid-${caseId}`)?.value.trim();
+      const customModification = document.getElementById(`custom-modification-${caseId}`)?.value.trim();
+
       const dotwSelectedButton = document.querySelector(`#dotw-options-${caseId} .selected`);
       const dotw = dotwSelectedButton ? dotwSelectedButton.getAttribute('data-day') : 'None';
 
@@ -811,11 +855,15 @@ function generateAndCopyNotes() {
       if (lid) {
         notes += ` = LID = ${lid}`;
       }
-      
+
+      if (customModification) {
+        notes += ` (${customModification})`;
+      }
+
       notes += `\n`;
 
-      // Append DOTW if not 'None'
-      if (dotw && dotw !== 'None') {
+      // Append DOTW if not 'None' and if no custom modification is present
+      if (!customModification && dotw && dotw !== 'None') {
         notes += `${caseNumber}) ${pocket} ${size} / ${colorUpper} = DOTW = *${dotw}*\n`;
       }
     }
