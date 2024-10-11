@@ -3,7 +3,7 @@ const cases = [];
 
 let keyboardMode = false;
 let activeCaseId = null;
-let activeSection = null; // 'pocket', 'size', 'color', 'lid', 'first-lid', 'second-lid'
+let activeSection = null; // 'pocket', 'size', 'color', 'lid', 'first-lid', 'second-lid', 'custom-modification'
 let colorInput = ''; // To capture color name input during keyboard navigation
 let awaitingColorSelection = false; // Indicates if we're waiting for the user to press Enter to select a color
 
@@ -98,6 +98,11 @@ function highlightActiveSection() {
       secondLidInput.classList.add('highlight');
       secondLidInput.focus();
       break;
+    case 'custom-modification':
+      const customModInput = caseDiv.querySelector(`#custom-modification-${activeCaseId}`);
+      customModInput.classList.add('highlight');
+      customModInput.focus();
+      break;
   }
 }
 
@@ -126,13 +131,10 @@ function scrollToActiveSection() {
       elementToScrollTo = caseDiv.querySelector(`#colors-${activeCaseId}`);
       break;
     case 'lid':
-      elementToScrollTo = caseDiv.querySelector(`#lid-${activeCaseId}`);
-      break;
     case 'first-lid':
-      elementToScrollTo = caseDiv.querySelector(`#first-lid-${activeCaseId}`);
-      break;
     case 'second-lid':
-      elementToScrollTo = caseDiv.querySelector(`#second-lid-${activeCaseId}`);
+    case 'custom-modification':
+      elementToScrollTo = caseDiv.querySelector(`#${activeSection}-${activeCaseId}`);
       break;
   }
 
@@ -157,7 +159,8 @@ function handleKeyboardInput(event) {
     case 'lid':
     case 'first-lid':
     case 'second-lid':
-      // Allow typing in lid engraving inputs
+    case 'custom-modification':
+      // Allow typing in lid engraving and custom modification inputs
       if (event.key === 'Enter') {
         event.preventDefault();
         moveToNextSection();
@@ -255,14 +258,15 @@ function moveToNextSection() {
         // First color just selected, now move to second color
         colorInput = ''; // Reset color input
         awaitingColorSelection = false;
+        activeSection = 'first-lid';
         highlightActiveSection();
         scrollToActiveSection();
-        // Remain in 'color' section to filter second color
         return;
       } else if (!secondColorSelected) {
         // Second color not selected yet, remain in 'color' section
         colorInput = ''; // Ensure color input is reset
         awaitingColorSelection = false;
+        activeSection = 'second-lid';
         highlightActiveSection();
         scrollToActiveSection();
         return;
@@ -279,11 +283,14 @@ function moveToNextSection() {
     if (pocket === 'AMPM' || pocket === '2-WEEK') {
       activeSection = 'second-lid';
     } else {
-      // For other cases, process is complete
-      exitKeyboardMode();
+      // For other cases, move to custom modification
+      activeSection = 'custom-modification';
     }
   } else if (activeSection === 'second-lid') {
-    // For multi-lid cases, after second lid engraving
+    // Move to custom modification
+    activeSection = 'custom-modification';
+  } else if (activeSection === 'custom-modification') {
+    // Process is complete
     exitKeyboardMode();
   } else {
     exitKeyboardMode();
@@ -449,7 +456,7 @@ function addCase() {
     
     <hr>
   `;
-  
+
   const removeButton = document.createElement('button');
   removeButton.className = 'emoji-button remove-button';
   removeButton.innerText = '❌';
@@ -474,11 +481,11 @@ function addCase() {
 
   // Generate buttons for Size options
   const sizeOptionsDiv = caseDiv.querySelector(`#size-options-${caseId}`);
-  const sizes = ['PILL', 'VITAMIN', ' VITAMIN XL'];
+  const sizes = ['PILL', 'VITAMIN', 'VITAMIN XL'];
   sizes.forEach(size => {
     const button = document.createElement('button');
     button.type = 'button';
-    button.innerText = size;
+    button.innerText = size.trim();
     button.onclick = () => {
       sizeOptionsDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
       button.classList.add('selected');
@@ -595,6 +602,37 @@ function updateCaseType(caseId) {
   }
 }
 
+function generateDOTWSelection(caseId) {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'None'];
+  let dotwHTML = `<label><strong>Start Day of the Week (DOTW):</strong></label>
+  <div id="dotw-options-${caseId}" class="option-buttons dotw-buttons">`;
+  days.forEach(day => {
+    dotwHTML += `<button type="button" data-day="${day}">${day}</button>`;
+  });
+  dotwHTML += `</div>`;
+  return dotwHTML;
+}
+
+function setupDOTWSelection(caseId) {
+  const dotwOptionsDiv = document.getElementById(`dotw-options-${caseId}`);
+  if (dotwOptionsDiv) {
+    const buttons = dotwOptionsDiv.querySelectorAll('button');
+    buttons.forEach(button => {
+      button.addEventListener('click', () => {
+        if (button.disabled) return; // Do nothing if button is disabled
+
+        buttons.forEach(btn => btn.classList.remove('selected'));
+        button.classList.add('selected');
+      });
+
+      // Select 'None' by default
+      if (button.getAttribute('data-day') === 'None') {
+        button.classList.add('selected');
+      }
+    });
+  }
+}
+
 function setupCustomModificationHandling(caseId) {
   const customModInput = document.getElementById(`custom-modification-${caseId}`);
   const dotwOptionsDiv = document.getElementById(`dotw-options-${caseId}`);
@@ -606,9 +644,8 @@ function setupCustomModificationHandling(caseId) {
         dotwOptionsDiv.querySelectorAll('button').forEach(btn => {
           btn.disabled = true;
           btn.classList.add('disabled');
+          btn.classList.remove('selected'); // Deselect any selected DOTW option
         });
-        // Optionally, deselect any selected DOTW option
-        dotwOptionsDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
       } else {
         // Enable DOTW dropdown
         dotwOptionsDiv.querySelectorAll('button').forEach(btn => {
@@ -620,24 +657,6 @@ function setupCustomModificationHandling(caseId) {
         if (noneButton && !dotwOptionsDiv.querySelector('.selected')) {
           noneButton.classList.add('selected');
         }
-      }
-    });
-  }
-}
-
-function setupDOTWSelection(caseId) {
-  const dotwOptionsDiv = document.getElementById(`dotw-options-${caseId}`);
-  if (dotwOptionsDiv) {
-    const buttons = dotwOptionsDiv.querySelectorAll('button');
-    buttons.forEach(button => {
-      button.addEventListener('click', () => {
-        buttons.forEach(btn => btn.classList.remove('selected'));
-        button.classList.add('selected');
-      });
-
-      // Select 'None' by default
-      if (button.getAttribute('data-day') === 'None') {
-        button.classList.add('selected');
       }
     });
   }
@@ -672,91 +691,97 @@ function generateColorSwatches(containerId, inputName) {
     },
   ];
 
-   const container = document.getElementById(containerId);
-    container.innerHTML = ''; // Clear any existing swatches
+  const container = document.getElementById(containerId);
+  container.innerHTML = ''; // Clear any existing swatches
 
-    colors.forEach(color => {
-      const label = document.createElement('label');
-      label.classList.add('color-swatch');
+  colors.forEach(color => {
+    const label = document.createElement('label');
+    label.classList.add('color-swatch');
 
-      const input = document.createElement('input');
-      input.type = 'radio';
-      input.name = inputName;
-      input.value = color.name;
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = inputName;
+    input.value = color.name;
 
-      const swatch = document.createElement('span');
-      swatch.classList.add('swatch');
+    const swatch = document.createElement('span');
+    swatch.classList.add('swatch');
 
-      if (color.isSplatter) {
-        swatch.style.backgroundColor = color.code;
-        swatch.style.backgroundImage = `radial-gradient(${color.splatterColor} 20%, transparent 20%), radial-gradient(${color.splatterColor} 20%, transparent 20%)`;
-        swatch.style.backgroundPosition = '0 0, 10px 10px';
-        swatch.style.backgroundSize = '20px 20px';
-      } else {
-        swatch.style.backgroundColor = color.code;
+    if (color.isSplatter) {
+      swatch.style.backgroundColor = color.code;
+      swatch.style.backgroundImage = `radial-gradient(${color.splatterColor} 20%, transparent 20%), radial-gradient(${color.splatterColor} 20%, transparent 20%)`;
+      swatch.style.backgroundPosition = '0 0, 10px 10px';
+      swatch.style.backgroundSize = '20px 20px';
+    } else {
+      swatch.style.backgroundColor = color.code;
+    }
+
+    const colorName = document.createElement('span');
+    colorName.classList.add('color-name');
+    colorName.innerText = color.name;
+
+    label.appendChild(input);
+    label.appendChild(swatch);
+    label.appendChild(colorName);
+
+    // Handle selection styling and autofocus
+    input.addEventListener('change', () => {
+      const allSwatches = container.querySelectorAll('.color-swatch');
+      allSwatches.forEach(swatch => swatch.classList.remove('selected'));
+      label.classList.add('selected');
+
+      // Determine which lid engraving input to focus based on the inputName
+      let inputType, caseId;
+      if (inputName.startsWith('first-color-')) {
+        inputType = 'first';
+        caseId = inputName.substring('first-color-'.length);
+      } else if (inputName.startsWith('second-color-')) {
+        inputType = 'second';
+        caseId = inputName.substring('second-color-'.length);
+      } else if (inputName.startsWith('color-')) {
+        inputType = 'single';
+        caseId = inputName.substring('color-'.length);
       }
 
-      const colorName = document.createElement('span');
-      colorName.classList.add('color-name');
-      colorName.innerText = color.name;
+      if (!caseId) return; // Safety check
 
-      label.appendChild(input);
-      label.appendChild(swatch);
-      label.appendChild(colorName);
+      const pocket = document.querySelector(`#pocket-options-${caseId} .selected`)?.innerText;
 
-      // Handle selection styling and autofocus
-      input.addEventListener('change', () => {
-        const allSwatches = container.querySelectorAll('.color-swatch');
-        allSwatches.forEach(swatch => swatch.classList.remove('selected'));
-        label.classList.add('selected');
+      if (pocket === 'AMPM' || pocket === '2-WEEK') {
+        const firstLidInput = document.getElementById(`first-lid-${caseId}`);
+        const secondLidInput = document.getElementById(`second-lid-${caseId}`);
+        const customModInput = document.getElementById(`custom-modification-${caseId}`);
 
-        // Determine which lid engraving input to focus based on the inputName
-        let inputType, caseId;
-        if (inputName.startsWith('first-color-')) {
-          inputType = 'first';
-          caseId = inputName.substring('first-color-'.length);
-        } else if (inputName.startsWith('second-color-')) {
-          inputType = 'second';
-          caseId = inputName.substring('second-color-'.length);
-        } else if (inputName.startsWith('color-')) {
-          inputType = 'single';
-          caseId = inputName.substring('color-'.length);
-        }
+        const firstLidValue = firstLidInput.value.trim();
+        const secondLidValue = secondLidInput.value.trim();
 
-        if (!caseId) return; // Safety check
+        const firstColorSelected = document.querySelector(`input[name="first-color-${caseId}"]:checked`);
+        const secondColorSelected = document.querySelector(`input[name="second-color-${caseId}"]:checked`);
 
-        const pocket = document.querySelector(`#pocket-options-${caseId} .selected`)?.innerText;
-
-        if (pocket === 'AMPM' || pocket === '2-WEEK') {
-          const firstLidInput = document.getElementById(`first-lid-${caseId}`);
-          const secondLidInput = document.getElementById(`second-lid-${caseId}`);
-
-          const firstLidValue = firstLidInput.value.trim();
-          const secondLidValue = secondLidInput.value.trim();
-
-          const firstColorSelected = document.querySelector(`input[name="first-color-${caseId}"]:checked`);
-          const secondColorSelected = document.querySelector(`input[name="second-color-${caseId}"]:checked`);
-
-          if (inputType === 'second' && firstColorSelected && secondColorSelected && !firstLidValue && !secondLidValue) {
-            // Workflow 1: Both colors selected, both lids empty, focus on first lid
-            firstLidInput.focus();
-          } else {
-            // Focus on the corresponding lid engraving input
-            if (inputType === 'first') {
-              firstLidInput.focus();
-            } else if (inputType === 'second') {
-              secondLidInput.focus();
-            }
-          }
+        if (inputType === 'second' && firstColorSelected && secondColorSelected && !firstLidValue && !secondLidValue) {
+          // Workflow 1: Both colors selected, both lids empty, focus on first lid
+          firstLidInput.focus();
         } else {
-          // For other cases, focus on the lid engraving input
-          document.getElementById(`lid-${caseId}`)?.focus();
+          // Focus on the corresponding lid engraving input
+          if (inputType === 'first') {
+            firstLidInput.focus();
+          } else if (inputType === 'second') {
+            secondLidInput.focus();
+          }
         }
-      });
 
-      container.appendChild(label);
+        // Additionally, if Custom Modification has text, focus on it
+        if (customModInput && customModInput.value.trim() !== '') {
+          customModInput.focus();
+        }
+      } else {
+        // For other cases, focus on the lid engraving input
+        document.getElementById(`lid-${caseId}`)?.focus();
+      }
     });
-  }
+
+    container.appendChild(label);
+  });
+}
 
 function generateAndCopyNotes() {
   let notes = '';
