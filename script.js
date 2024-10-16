@@ -661,6 +661,7 @@ function generateDOTWSelection(caseId) {
         <option value="PM Left Side/AM Right Side">
         <option value="WEEK1 Bottom & Left/WEEK2 Top & Right">
         <option value="DOTW in different language = ">
+        <option value="DOTW in different start day = ">
       </datalist>
     </label>
   </div>
