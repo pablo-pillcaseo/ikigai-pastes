@@ -371,14 +371,21 @@ function getColors() {
       name: 'Black + Blue Splatter',
       code: '#000000',
       isSplatter: true,
-      splatterColor: '#00D3E8',
+      splatterColors: ['#00D3E8'],
     },
     {
       name: 'Disco Splatter',
       code: '#CE55C4',
       isSplatter: true,
-      splatterColor: '#00D3E8',
+      splatterColors: ['#00D3E8'],
     },
+    {
+    name: 'Fire + Ice Splatter',
+    code: '#EB5047', // Designer Red background
+    isSplatter: true,
+    splatterColors: ['#E0DFCB', '#4883E8'], // Aluminum and Navy Blue splatter colors
+    },
+
   ];
 }
 
@@ -685,35 +692,9 @@ function setupDOTWSelection(caseId) {
 }
 
 function generateColorSwatches(containerId, inputName) {
-  const colors = [
-    { name: 'Matte Black', code: '#000000' },
-    { name: 'Aluminum', code: '#E0DFCB' },
-    { name: 'Navy Blue', code: '#4883E8' },
-    { name: 'Forest Green', code: '#899D7A' },
-    { name: 'Designer Red', code: '#EB5047' },
-    { name: 'Ikigai Orange', code: '#EB7114' },
-    { name: 'Golden Rice', code: '#F8B40E' },
-    { name: 'Emerald Green', code: '#34C87E' },
-    { name: 'Bahama Blue', code: '#00D3E8' },
-    { name: 'Purple Punch', code: '#CE55C4' },
-    { name: 'Pink Panther', code: '#E967A6' },
-    { name: 'Rose Gold', code: '#FFCAC4' },
-    { name: 'Mellow Yellow', code: '#FFE331' },
-    {
-      name: 'Black + Blue Splatter',
-      code: '#000000',
-      isSplatter: true,
-      splatterColor: '#00D3E8',
-    },
-    {
-      name: 'Disco Splatter',
-      code: '#CE55C4',
-      isSplatter: true,
-      splatterColor: '#00D3E8',
-    },
-  ];
+  const colors = getColors();
 
-  const container = document.getElementById(containerId);
+const container = document.getElementById(containerId);
   container.innerHTML = ''; // Clear any existing swatches
 
   colors.forEach(color => {
@@ -730,9 +711,36 @@ function generateColorSwatches(containerId, inputName) {
 
     if (color.isSplatter) {
       swatch.style.backgroundColor = color.code;
-      swatch.style.backgroundImage = `radial-gradient(${color.splatterColor} 20%, transparent 20%), radial-gradient(${color.splatterColor} 20%, transparent 20%)`;
-      swatch.style.backgroundPosition = '0 0, 10px 10px';
-      swatch.style.backgroundSize = '20px 20px';
+
+      const totalLayers = 3; // Set the total number of layers for consistent density
+      const splatterColors = [];
+
+      // Repeat splatter colors to fill all layers
+      for (let i = 0; i < totalLayers; i++) {
+        const colorIndex = i % color.splatterColors.length;
+        splatterColors.push(color.splatterColors[colorIndex]);
+      }
+
+      const splatterGradients = [];
+      const backgroundPositions = [];
+      const backgroundSizes = [];
+
+      splatterColors.forEach((splatterColor, index) => {
+        // Create the radial-gradient for this splatter color
+        splatterGradients.push(`radial-gradient(${splatterColor} 15%, transparent 20%)`);
+
+        // Calculate position offsets to distribute dots evenly
+        const positionOffset = (index * 10) % 30;
+        backgroundPositions.push(`${positionOffset}px ${positionOffset}px`);
+
+        // Set consistent background size for all layers
+        backgroundSizes.push('20px 20px');
+      });
+
+      // Join the arrays to create CSS strings
+      swatch.style.backgroundImage = splatterGradients.join(', ');
+      swatch.style.backgroundPosition = backgroundPositions.join(', ');
+      swatch.style.backgroundSize = backgroundSizes.join(', ');
     } else {
       swatch.style.backgroundColor = color.code;
     }
