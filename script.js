@@ -645,10 +645,16 @@ function generateDOTWSelection(caseId) {
   });
   dotwHTML += `</div>
   
-  <!-- **Added Custom Modifications Field** -->
   <div id="custom-modifications-div-${caseId}" class="custom-modifications">
     <label>Custom Modifications:
-      <input type="text" id="custom-modifications-${caseId}" placeholder="Optional">
+      <input type="text" id="custom-modifications-${caseId}" placeholder="Optional" list="custom-mod-options-${caseId}">
+      <datalist id="custom-mod-options-${caseId}">
+        <option value="No AM/PM on DOTW">
+        <option value="No WEEK1/WEEK2 on DOTW">
+        <option value="PM Left Side/AM Right Side">
+        <option value="WEEK1 Bottom & Left/WEEK2 Top & Right">
+        <option value="DOTW in different language = ">
+      </datalist>
     </label>
   </div>
   `;
