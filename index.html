@@ -8,11 +8,40 @@
 </head>
 <body>
     <h1>🌸 Ｉｋｉｇａｉ　Ｐａｓｔｅｓ 🌸</h1>
-    <div id="case-list"></div>
-    <button class="emoji-button" onclick="addCase()" title="Add Case">➕</button>
-    <button class="emoji-button" onclick="generateAndCopyNotes()" title="Generate Text and Copy to Clipboard">📋</button>
-    <pre id="notes-output"></pre>
-
-    <script src="script.js"></script>
+    
+    <!-- Tabs Navigation -->
+    <div class="tabs">
+      <button class="tab-button active" data-tab="engravings">Engravings</button>
+      <button class="tab-button" data-tab="sku-lookup">SKU Lookup</button>
+    </div>
+    
+    <!-- Engravings Tab Content -->
+    <div class="tab-content" id="engravings">
+      <div id="case-list"></div>
+      <!-- Add Case Button -->
+      <button class="emoji-button" onclick="addCase()" title="Add Case">➕</button>
+      <!-- Combined Generate and Copy Button -->
+      <button class="emoji-button" onclick="generateAndCopyNotes()" title="Generate and Copy NOTES">📋</button>
+      <pre id="notes-output"></pre>
+    </div>
+    
+    <!-- SKU Lookup Tab Content -->
+    <div class="tab-content" id="sku-lookup" style="display: none;">
+      <div id="sku-lookup-interface">
+        <!-- Case Type Selection -->
+        <label><strong>Case Type:</strong></label>
+        <div id="sku-case-type-options" class="option-buttons"></div>
+    
+        <!-- Dynamic Options -->
+        <div id="sku-options"></div>
+    
+        <!-- SKU Display -->
+        <div id="sku-display">
+          <label for="sku-output"><strong>SKU:</strong></label>
+          <input type="text" id="sku-output" readonly>
+          <button onclick="copySKU()" title="Copy SKU to Clipboard">📋</button>
+        </div>
+      </div>
+    </div>
 </body>
 </html>
