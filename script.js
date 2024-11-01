@@ -926,3 +926,461 @@ function generateAndCopyNotes() {
     });
   }
 }
+
+// --- Tab Switching Functionality ---
+document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', () => {
+        // Remove 'active' class from all buttons and hide all tab contents
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+
+        // Add 'active' class to clicked button and show corresponding tab content
+        button.classList.add('active');
+        const tabContentId = button.getAttribute('data-tab');
+        document.getElementById(tabContentId).style.display = 'block';
+    });
+});
+
+// Set the initial active tab
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('engravings').style.display = 'block';
+});
+
+// --- SKU Lookup Functionality ---
+// Load JSON data
+const skuData = {
+  "cases": {
+    "single": [
+      { "name": "Nano Pill Case", "keyword": "SPC-NPC", "pockets": "nano", "size": "pill" },
+      { "name": "Mission Pill Case", "keyword": "SPC-MPC", "pockets": "mission", "size": "pill" },
+      { "name": "Mission Vitamin Case", "keyword": "SPC-MVC", "pockets": "mission", "size": "vitamin" },
+      { "name": "Weekly Pill Case", "keyword": "SPC-WPC", "pockets": "weekly", "size": "pill" },
+      { "name": "Weekly Vitamin Case", "keyword": "SPC-WVC", "pockets": "weekly", "size": "vitamin" },
+      { "name": "Weekly Vitamin XL Case", "keyword": "SPC-WVXC", "pockets": "weekly", "size": "vitamin xl" },
+      { "name": "Weekly AM-PM Pill Case", "keyword": "BPC-WAPPC2", "pockets": "ampm", "size": "pill" },
+      { "name": "Weekly AM-PM Vitamin Case", "keyword": "BPC-WAC2", "pockets": "ampm", "size": "vitamin" },
+      { "name": "AM - Left Side (Vitamin)", "keyword": "SPC-WVALS", "pockets": "ampm", "size": "vitamin", "note": "Can be used for 2-Week Vitamin" },
+      { "name": "PM - Right Side (Vitamin)", "keyword": "SPC-WVPRS", "pockets": "ampm", "size": "vitamin", "note": "Can be used for 2-Week Vitamin" },
+      { "name": "AM Pill - Left Side", "keyword": "SPC-WVAPLS", "pockets": "ampm", "size": "pill", "note": "Can be used for 2-Week Pill" },
+      { "name": "PM Pill - Right Side", "keyword": "SPC-WVPPRS", "pockets": "ampm", "size": "pill", "note": "Can be used for 2-Week Pill" },
+      { "name": "2-Week Pill Case", "keyword": "BPC-2WPC", "pockets": "2-week", "size": "pill" },
+      { "name": "2-Week Vitamin Case", "keyword": "BPC-2WVC", "pockets": "2-week", "size": "vitamin" }
+    ],
+    "2_pack": [
+      { "name": "Nano Pill Cases (2-Pack)", "keyword": "BPC-NPC2", "pockets": "nano", "size": "pill" },
+      { "name": "Mission Pill Cases (2-Pack)", "keyword": "BPC-MPC2", "pockets": "mission", "size": "pill" },
+      { "name": "Mission Vitamin Cases (2-Pack)", "keyword": "BPC-MVC2", "pockets": "mission", "size": "vitamin" },
+      { "name": "Weekly Pill Cases (2-Pack)", "keyword": "BPC-WPC2", "pockets": "weekly", "size": "pill" },
+      { "name": "Weekly Vitamin Cases (2-Pack)", "keyword": "BPC-WVC2", "pockets": "weekly", "size": "vitamin" },
+      { "name": "Weekly Vitamin XL Cases (2-Pack)", "keyword": "BPC-WVXC2", "pockets": "weekly", "size": "vitamin xl" }
+    ],
+    "combo_pack": [
+      {
+        "name": "Mission Vitamin + Mission Pill Cases (Combo Pack)",
+        "keyword": "BPC-MPMVCCP",
+        "case1": { "pockets": "mission", "size": "vitamin" },
+        "case2": { "pockets": "mission", "size": "pill" }
+      },
+      {
+        "name": "Weekly Pill + Mission Pill Cases (Combo Pack)",
+        "keyword": "BPC-WPMPCCP",
+        "case1": { "pockets": "weekly", "size": "pill" },
+        "case2": { "pockets": "mission", "size": "pill" }
+      },
+      {
+        "name": "Weekly Pill + Mission Vitamin Cases (Combo Pack)",
+        "keyword": "BPC-WPMVCCP",
+        "case1": { "pockets": "weekly", "size": "pill" },
+        "case2": { "pockets": "mission", "size": "vitamin" }
+      },
+      {
+        "name": "Weekly Vitamin + Weekly Pill Case (Combo Pack)",
+        "keyword": "BPC-WVWPCCP",
+        "case1": { "pockets": "weekly", "size": "vitamin" },
+        "case2": { "pockets": "weekly", "size": "pill" }
+      },
+      {
+        "name": "Weekly Vitamin XL + Weekly Pill Cases (Combo Pack)",
+        "keyword": "BPC-WVXWPCCP",
+        "case1": { "pockets": "weekly", "size": "vitamin xl" },
+        "case2": { "pockets": "weekly", "size": "pill" }
+      },
+      {
+        "name": "Weekly Vitamin + Mission Pill Cases (Combo Pack)",
+        "keyword": "BPC-WVMPCCP",
+        "case1": { "pockets": "weekly", "size": "vitamin" },
+        "case2": { "pockets": "mission", "size": "pill" }
+      },
+      {
+        "name": "Weekly Vitamin + Mission Vitamin Cases (Combo Pack)",
+        "keyword": "BPC-WVMVCCP",
+        "case1": { "pockets": "weekly", "size": "vitamin" },
+        "case2": { "pockets": "mission", "size": "vitamin" }
+      },
+      {
+        "name": "Weekly Vitamin XL + Weekly Vitamin Cases (Combo Pack)",
+        "keyword": "BPC-WVXWVCCP",
+        "case1": { "pockets": "weekly", "size": "vitamin xl" },
+        "case2": { "pockets": "weekly", "size": "vitamin" }
+      },
+      {
+        "name": "Weekly Vitamin XL + Mission Pill Cases (Combo Pack)",
+        "keyword": "BPC-WVXMPCCP",
+        "case1": { "pockets": "weekly", "size": "vitamin xl" },
+        "case2": { "pockets": "mission", "size": "pill" }
+      },
+      {
+        "name": "Weekly Vitamin XL + Mission Vitamin Cases (Combo Pack)",
+        "keyword": "BPC-WVXMVCCP",
+        "case1": { "pockets": "weekly", "size": "vitamin xl" },
+        "case2": { "pockets": "mission", "size": "vitamin" }
+      }
+    ],
+    "others": [
+      { "name": "CS - Lid Engraving", "keyword": "ENG-LID" },
+      { "name": "CS - In Pockets Engraving - Days of the Week", "keyword": "ENG-DOTW" },
+      { "name": "Body Replacement", "keyword": "REP-BOD" },
+      { "name": "Lid Replacement", "keyword": "REP-LID" },
+      { "name": "Ball Plunger Replacement", "keyword": "REP-BPL" }
+    ]
+  }
+};
+
+// Generate buttons for Case Types
+function generateCaseTypeButtons() {
+    const caseTypes = Object.keys(skuData.cases);
+    const caseTypeOptionsDiv = document.getElementById('sku-case-type-options');
+    caseTypeOptionsDiv.innerHTML = '';
+    caseTypes.forEach(type => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.innerText = type.replace('_', ' ').toUpperCase();
+        button.dataset.type = type;
+        button.addEventListener('click', () => {
+            // Remove 'selected' class from other buttons
+            caseTypeOptionsDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+            button.classList.add('selected');
+            handleCaseTypeSelection(type);
+        });
+        caseTypeOptionsDiv.appendChild(button);
+    });
+}
+
+// Call this function on page load
+generateCaseTypeButtons();
+
+function handleCaseTypeSelection(caseType) {
+    const skuOptionsDiv = document.getElementById('sku-options');
+    skuOptionsDiv.innerHTML = '';
+    document.getElementById('sku-output').value = '';
+
+    if (caseType === 'others') {
+        generateCaseSelection(caseType);
+    } else if (caseType === 'combo_pack') {
+        generateComboPackSelection();
+    } else {
+        generatePocketSizeOptions(caseType);
+    }
+}
+
+function generateCaseSelection(caseType) {
+    const skuCases = skuData.cases[caseType];
+    const skuOptionsDiv = document.getElementById('sku-options');
+
+    const label = document.createElement('label');
+    label.innerHTML = '<strong>Select Case:</strong>';
+    const caseOptionsDiv = document.createElement('div');
+    caseOptionsDiv.className = 'option-buttons';
+    skuCases.forEach(c => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.innerText = c.name;
+        button.dataset.keyword = c.keyword;
+        button.addEventListener('click', () => {
+            // Remove 'selected' class from other buttons
+            caseOptionsDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+            button.classList.add('selected');
+            document.getElementById('sku-output').value = c.keyword;
+        });
+        caseOptionsDiv.appendChild(button);
+    });
+    skuOptionsDiv.appendChild(label);
+    skuOptionsDiv.appendChild(caseOptionsDiv);
+}
+
+function generateComboPackSelection() {
+    const skuOptionsDiv = document.getElementById('sku-options');
+    skuOptionsDiv.innerHTML = '';
+
+    // Valid pockets for combo packs (exclude 'nano', 'ampm', '2-week')
+    const validPockets = ['mission', 'weekly'];
+
+    ['case1', 'case2'].forEach((caseKey, index) => {
+        const caseNumber = index + 1;
+        const skuCases = skuData.cases['single'].filter(c => validPockets.includes(c.pockets));
+
+        // Pocket Selection for Case X
+        const pocketLabel = document.createElement('label');
+        pocketLabel.innerHTML = `<strong>Case ${caseNumber} - Pocket:</strong>`;
+        const pocketOptionsDiv = document.createElement('div');
+        pocketOptionsDiv.className = 'option-buttons';
+        pocketOptionsDiv.id = `combo-${caseKey}-pocket-options`;
+
+        const pockets = [...new Set(skuCases.map(c => c.pockets))];
+
+        pockets.forEach(pocket => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.innerText = pocket.toUpperCase();
+            button.dataset.pocket = pocket;
+            button.addEventListener('click', () => {
+                pocketOptionsDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+                button.classList.add('selected');
+                handleComboPocketSelection(caseKey, pocket);
+
+                if (caseKey === 'case1') {
+                    updateCase2SizeOptions();
+                }
+            });
+            pocketOptionsDiv.appendChild(button);
+        });
+
+        // Size Selection for Case X
+        const sizeContainer = document.createElement('div');
+        sizeContainer.id = `combo-${caseKey}-size-container`;
+
+        const sizeLabel = document.createElement('label');
+        sizeLabel.innerHTML = `<strong>Case ${caseNumber} - Size:</strong>`;
+
+        const sizeOptionsDiv = document.createElement('div');
+        sizeOptionsDiv.className = 'option-buttons';
+        sizeOptionsDiv.id = `combo-${caseKey}-size-options`;
+
+        sizeContainer.appendChild(sizeLabel);
+        sizeContainer.appendChild(sizeOptionsDiv);
+
+        skuOptionsDiv.appendChild(pocketLabel);
+        skuOptionsDiv.appendChild(pocketOptionsDiv);
+        skuOptionsDiv.appendChild(sizeContainer);
+    });
+}
+
+function handleComboPocketSelection(caseKey, selectedPocket) {
+    const skuCases = skuData.cases['single'];
+    const sizeOptionsDiv = document.getElementById(`combo-${caseKey}-size-options`);
+    sizeOptionsDiv.innerHTML = '';
+
+    document.getElementById('sku-output').value = '';
+
+    const availableCases = skuCases.filter(c => c.pockets === selectedPocket);
+    const sizes = [...new Set(availableCases.map(c => c.size))];
+
+    sizes.forEach(size => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.innerText = size.toUpperCase();
+        button.dataset.size = size;
+        button.addEventListener('click', () => {
+            sizeOptionsDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+            button.classList.add('selected');
+
+            if (caseKey === 'case1') {
+                updateCase2SizeOptions();
+            } else {
+                checkComboSKU();
+            }
+        });
+
+        // Now, if this is Case 2, we may need to disable this size option if the combination matches Case 1
+        if (caseKey === 'case2') {
+            const case1Pocket = document.querySelector('#combo-case1-pocket-options .selected')?.dataset.pocket;
+            const case1Size = document.querySelector('#combo-case1-size-options .selected')?.dataset.size;
+
+            if (case1Pocket && case1Size) {
+                if (selectedPocket === case1Pocket && size === case1Size) {
+                    // Disable this size option
+                    button.disabled = true;
+                    button.classList.add('disabled');
+                }
+            }
+        }
+
+        sizeOptionsDiv.appendChild(button);
+    });
+}
+
+function updateCase2SizeOptions() {
+    const case2SelectedPocket = document.querySelector('#combo-case2-pocket-options .selected')?.dataset.pocket;
+    if (case2SelectedPocket) {
+        // Regenerate size options for Case 2
+        handleComboPocketSelection('case2', case2SelectedPocket);
+    }
+}
+
+function checkComboSKU() {
+    const skuOutput = document.getElementById('sku-output');
+    skuOutput.value = '';
+
+    const case1Pocket = document.querySelector('#combo-case1-pocket-options .selected')?.dataset.pocket;
+    const case1Size = document.querySelector('#combo-case1-size-options .selected')?.dataset.size;
+    const case2Pocket = document.querySelector('#combo-case2-pocket-options .selected')?.dataset.pocket;
+    const case2Size = document.querySelector('#combo-case2-size-options .selected')?.dataset.size;
+
+    if (case1Pocket && case1Size && case2Pocket && case2Size) {
+        if (case1Pocket === case2Pocket && case1Size === case2Size) {
+            skuOutput.value = 'Cannot select identical cases.';
+            return;
+        }
+        const comboPacks = skuData.cases['combo_pack'];
+        const matchingCombo = comboPacks.find(combo => {
+            const matchCase1 = combo.case1.pockets === case1Pocket && combo.case1.size === case1Size;
+            const matchCase2 = combo.case2.pockets === case2Pocket && combo.case2.size === case2Size;
+            const matchCase1Reverse = combo.case1.pockets === case2Pocket && combo.case1.size === case2Size;
+            const matchCase2Reverse = combo.case2.pockets === case1Pocket && combo.case2.size === case1Size;
+            return (matchCase1 && matchCase2) || (matchCase1Reverse && matchCase2Reverse);
+        });
+
+        if (matchingCombo) {
+            skuOutput.value = matchingCombo.keyword;
+        } else {
+            skuOutput.value = 'No matching SKU found';
+        }
+    }
+}
+
+function generatePocketSizeOptions(caseType) {
+    const skuCases = skuData.cases[caseType];
+    const skuOptionsDiv = document.getElementById('sku-options');
+    skuOptionsDiv.innerHTML = '';
+
+    // Create Pocket Selection
+    const pocketLabel = document.createElement('label');
+    pocketLabel.innerHTML = '<strong>Pocket:</strong>';
+    const pocketOptionsDiv = document.createElement('div');
+    pocketOptionsDiv.className = 'option-buttons';
+
+    const pockets = [...new Set(skuCases.map(c => c.pockets))];
+
+    pockets.forEach(pocket => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.innerText = pocket.toUpperCase();
+        button.dataset.pocket = pocket;
+        button.addEventListener('click', () => {
+            pocketOptionsDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+            button.classList.add('selected');
+            handlePocketSelection(caseType, pocket);
+        });
+        pocketOptionsDiv.appendChild(button);
+    });
+
+    skuOptionsDiv.appendChild(pocketLabel);
+    skuOptionsDiv.appendChild(pocketOptionsDiv);
+}
+
+function handlePocketSelection(caseType, selectedPocket) {
+    const skuCases = skuData.cases[caseType];
+    const skuOptionsDiv = document.getElementById('sku-options');
+
+    const existingSizeContainer = skuOptionsDiv.querySelector('#size-container');
+    if (existingSizeContainer) {
+        existingSizeContainer.remove();
+    }
+
+    document.getElementById('sku-output').value = '';
+
+    const availableCases = skuCases.filter(c => c.pockets === selectedPocket);
+    let sizes = [...new Set(availableCases.map(c => c.size))];
+
+    // Include 'left side' and 'right side' options for 'ampm' and '2-week' pockets
+    if (selectedPocket === 'ampm' || selectedPocket === '2-week') {
+        sizes = sizes.concat(['left side', 'right side']);
+    }
+
+    const sizeContainer = document.createElement('div');
+    sizeContainer.id = 'size-container';
+
+    const sizeLabel = document.createElement('label');
+    sizeLabel.innerHTML = '<strong>Size:</strong>';
+
+    const sizeOptionsDiv = document.createElement('div');
+    sizeOptionsDiv.className = 'option-buttons';
+
+    sizes.forEach(size => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.innerText = size.toUpperCase();
+        button.dataset.size = size;
+        button.addEventListener('click', () => {
+            sizeOptionsDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+            button.classList.add('selected');
+            updateSKU(caseType, selectedPocket, size);
+        });
+        sizeOptionsDiv.appendChild(button);
+    });
+
+    sizeContainer.appendChild(sizeLabel);
+    sizeContainer.appendChild(sizeOptionsDiv);
+
+    skuOptionsDiv.appendChild(sizeContainer);
+}
+
+function updateSKU(caseType, selectedPocket, selectedSize) {
+    const skuCases = skuData.cases[caseType];
+
+    let matchingCase;
+
+    if (selectedSize === 'left side' || selectedSize === 'right side') {
+        matchingCase = skuCases.find(c =>
+            c.pockets === selectedPocket &&
+            (c.size === 'vitamin' || c.size === 'pill') &&
+            c.name.toLowerCase().includes(selectedSize)
+        );
+    } else {
+        matchingCase = skuCases.find(c => c.pockets === selectedPocket && c.size === selectedSize);
+    }
+
+    if (matchingCase) {
+        document.getElementById('sku-output').value = matchingCase.keyword;
+    } else {
+        document.getElementById('sku-output').value = 'No matching SKU found';
+    }
+}
+
+function checkComboSKU() {
+    const skuOutput = document.getElementById('sku-output');
+    skuOutput.value = '';
+
+    const case1Pocket = document.querySelector('#combo-case1-pocket-options .selected')?.dataset.pocket;
+    const case1Size = document.querySelector('#combo-case1-size-options .selected')?.dataset.size;
+    const case2Pocket = document.querySelector('#combo-case2-pocket-options .selected')?.dataset.pocket;
+    const case2Size = document.querySelector('#combo-case2-size-options .selected')?.dataset.size;
+
+    if (case1Pocket && case1Size && case2Pocket && case2Size) {
+        const comboPacks = skuData.cases['combo_pack'];
+        const matchingCombo = comboPacks.find(combo => {
+            const matchCase1 = combo.case1.pockets === case1Pocket && combo.case1.size === case1Size;
+            const matchCase2 = combo.case2.pockets === case2Pocket && combo.case2.size === case2Size;
+            const matchCase1Reverse = combo.case1.pockets === case2Pocket && combo.case1.size === case2Size;
+            const matchCase2Reverse = combo.case2.pockets === case1Pocket && combo.case2.size === case1Size;
+            return (matchCase1 && matchCase2) || (matchCase1Reverse && matchCase2Reverse);
+        });
+
+        if (matchingCombo) {
+            skuOutput.value = matchingCombo.keyword;
+        } else {
+            skuOutput.value = 'No matching SKU found';
+        }
+    }
+}
+
+function copySKU() {
+    const sku = document.getElementById('sku-output').value;
+    if (sku && sku !== 'No matching SKU found') {
+        navigator.clipboard.writeText(sku).then(() => {
+            alert('SKU copied to clipboard!');
+        }).catch(err => {
+            console.error('Could not copy SKU: ', err);
+        });
+    }
+}
