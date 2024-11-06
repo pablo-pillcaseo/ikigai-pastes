@@ -661,7 +661,6 @@ function generateDOTWSelection(caseId) {
         <option value="PM Left Side/AM Right Side">
         <option value="WEEK1 Bottom & Left/WEEK2 Top & Right">
         <option value="DOTW in different language = ">
-        <option value="DOTW in different start day = ">
       </datalist>
     </label>
   </div>
@@ -1286,16 +1285,16 @@ function handlePocketSelection(caseType, selectedPocket) {
     if (existingSizeContainer) {
         existingSizeContainer.remove();
     }
+  
+    const existingSidesContainer = skuOptionsDiv.querySelector('#sides-container');
+    if (existingSidesContainer) {
+        existingSidesContainer.remove();
+    }
 
     document.getElementById('sku-output').value = '';
 
     const availableCases = skuCases.filter(c => c.pockets === selectedPocket);
     let sizes = [...new Set(availableCases.map(c => c.size))];
-
-    // Include 'left side' and 'right side' options for 'ampm' and '2-week' pockets
-    if (selectedPocket === 'ampm' || selectedPocket === '2-week') {
-        sizes = sizes.concat(['left side', 'right side']);
-    }
 
     const sizeContainer = document.createElement('div');
     sizeContainer.id = 'size-container';
@@ -1314,7 +1313,17 @@ function handlePocketSelection(caseType, selectedPocket) {
         button.addEventListener('click', () => {
             sizeOptionsDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
             button.classList.add('selected');
-            updateSKU(caseType, selectedPocket, size);
+
+            if (selectedPocket === 'ampm' || selectedPocket === '2-week') {
+                generateSidesOptions(skuOptionsDiv, selectedPocket, caseType);
+            } else {
+                // Remove sides options if they exist
+                const existingSidesContainer = skuOptionsDiv.querySelector('#sides-container');
+                if (existingSidesContainer) {
+                    existingSidesContainer.remove();
+                }
+                updateSKU(caseType, selectedPocket, size);
+            }
         });
         sizeOptionsDiv.appendChild(button);
     });
@@ -1325,18 +1334,87 @@ function handlePocketSelection(caseType, selectedPocket) {
     skuOptionsDiv.appendChild(sizeContainer);
 }
 
+function generateSidesOptions(skuOptionsDiv, selectedPocket, caseType) {
+    // Remove existing sides container if any
+    const existingSidesContainer = skuOptionsDiv.querySelector('#sides-container');
+    if (existingSidesContainer) {
+        existingSidesContainer.remove();
+    }
+
+    const sidesContainer = document.createElement('div');
+    sidesContainer.id = 'sides-container';
+
+    const sidesLabel = document.createElement('label');
+    sidesLabel.innerHTML = '<strong>Sides:</strong>';
+
+    const sidesOptionsDiv = document.createElement('div');
+    sidesOptionsDiv.className = 'option-buttons';
+
+    const sides = ['Both', 'Left Side', 'Right Side'];
+
+    sides.forEach(side => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.innerText = side;
+        button.dataset.side = side.toLowerCase();
+        button.addEventListener('click', () => {
+            sidesOptionsDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+            button.classList.add('selected');
+
+            // After side selection, update SKU
+            const selectedPocket = document.querySelector('#sku-options .option-buttons button.selected')?.dataset.pocket;
+            const selectedSize = document.querySelector('#size-container .option-buttons button.selected')?.dataset.size;
+            updateSKU(caseType, selectedPocket, selectedSize);
+        });
+
+        sidesOptionsDiv.appendChild(button);
+    });
+
+    // Default to 'Both' selected
+    sidesOptionsDiv.querySelector('button[data-side="both"]').classList.add('selected');
+
+    sidesContainer.appendChild(sidesLabel);
+    sidesContainer.appendChild(sidesOptionsDiv);
+
+    skuOptionsDiv.appendChild(sidesContainer);
+
+    // After generating sides options, update SKU with default selection
+    const selectedSize = document.querySelector('#size-container .option-buttons button.selected')?.dataset.size;
+    updateSKU(caseType, selectedPocket, selectedSize);
+}
+
 function updateSKU(caseType, selectedPocket, selectedSize) {
     const skuCases = skuData.cases[caseType];
 
     let matchingCase;
 
-    if (selectedSize === 'left side' || selectedSize === 'right side') {
-        matchingCase = skuCases.find(c =>
-            c.pockets === selectedPocket &&
-            (c.size === 'vitamin' || c.size === 'pill') &&
-            c.name.toLowerCase().includes(selectedSize)
-        );
+    if (selectedPocket === 'ampm' || selectedPocket === '2-week') {
+        const selectedSide = document.querySelector('#sides-container .option-buttons button.selected')?.dataset.side;
+
+        if (!selectedSide) {
+            document.getElementById('sku-output').value = '';
+            return;
+        }
+
+        if (selectedSide === 'both') {
+            // For 'Both', find the SKU where pockets is selectedPocket, size is selectedSize, and name does not include 'Left Side' or 'Right Side'
+            matchingCase = skuCases.find(c =>
+                c.pockets === selectedPocket &&
+                c.size === selectedSize &&
+                (!c.name.toLowerCase().includes('left side') && !c.name.toLowerCase().includes('right side'))
+            );
+        } else {
+            // For 'Left Side' or 'Right Side', find the SKU where pockets is 'ampm', size is selectedSize, and name includes 'Left Side' or 'Right Side' accordingly
+            // Also include SKUs with notes indicating they can be used for '2-Week' if selectedPocket is '2-week'
+            matchingCase = skuCases.find(c =>
+                c.pockets === 'ampm' && // For side SKUs, the pocket is 'ampm' in SKU data
+                c.size === selectedSize &&
+                c.name.toLowerCase().includes(selectedSide) &&
+                (selectedPocket === 'ampm' || (c.note && c.note.includes('Can be used for 2-Week')))
+            );
+        }
     } else {
+        // For other pockets
         matchingCase = skuCases.find(c => c.pockets === selectedPocket && c.size === selectedSize);
     }
 
