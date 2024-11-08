@@ -1456,7 +1456,6 @@ function copySKU() {
     const sku = document.getElementById('sku-output').value;
     if (sku && sku !== 'No matching SKU found') {
         navigator.clipboard.writeText(sku).then(() => {
-            alert('SKU copied to clipboard!');
         }).catch(err => {
             console.error('Could not copy SKU: ', err);
         });
