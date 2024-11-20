@@ -367,6 +367,8 @@ function getColors() {
     { name: 'Pink Panther', code: '#E967A6' },
     { name: 'Rose Gold', code: '#FFCAC4' },
     { name: 'Mellow Yellow', code: '#FFE331' },
+    { name: 'Coffee', code: '#4B3621' },
+    { name: 'Gunmetal', code: '#2A3439' },
     {
       name: 'Black + Blue Splatter',
       code: '#000000',
