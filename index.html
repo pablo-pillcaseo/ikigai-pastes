@@ -6,9 +6,7 @@
     <title>Ikigai Pastes</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <h5>🌸 Ｉｋｉｇａｉ　Ｐａｓｔｅｓ 🌸</h5>
-    
+<body> 
     <!-- Tabs Navigation -->
     <div class="tabs">
       <button class="tab-button active" data-tab="engravings">Engravings</button>
@@ -16,11 +14,11 @@
     </div>
     
     <!-- Engravings Tab Content -->
-    <div class="tab-content" id="engravings">
+    <div class="tab-content" id="engravings" style="display: block;">
       <div id="case-list"></div>
       <!-- Add Case Button -->
       <button class="emoji-button" onclick="addCase()" title="Add Case">➕</button>
-      <!-- Combined Generate and Copy Button -->
+      <!-- Generate and Copy Notes Button -->
       <button class="emoji-button" onclick="generateAndCopyNotes()" title="Generate and Copy NOTES">📋</button>
       <pre id="notes-output"></pre>
     </div>
