@@ -40,7 +40,7 @@
   /* Emoji Button Color */
   --emoji-text-color: #000000;
 
-  /* First Match Border */
+  /* First Match Border (unused) */
   --first-match-border: #ff9800;
 }
 
@@ -75,8 +75,8 @@
     --tab-active-border: #1E90FF;
 
     /* Highlight Colors */
-    --highlight-outline: #ffa726; /* Lighter Orange */
-    --highlight-single-outline: #66bb6a; /* Lighter Green */
+    --highlight-outline: #ffa726;
+    --highlight-single-outline: #66bb6a;
 
     /* SKU Output Colors */
     --sku-output-bg: #1e1e1e;
@@ -85,7 +85,7 @@
     /* Emoji Button Color */
     --emoji-text-color: #e0e0e0;
 
-    /* First Match Border */
+    /* First Match Border (unused) */
     --first-match-border: #ffa726;
   }
 }
@@ -176,7 +176,7 @@ hr {
   display: block;
   margin: 0 auto 5px;
   border: 2px solid transparent;
-  opacity: 1; /* Ensure default opacity is 1 */
+  opacity: 1;
 }
 
 .color-swatch.selected .swatch {
@@ -288,25 +288,12 @@ button {
 
 /* --- Highlighted Sections --- */
 .highlight {
-  outline: 2px solid var(--highlight-outline); /* Orange outline */
+  outline: 2px solid var(--highlight-outline);
   padding: 5px;
 }
 
 .highlight.single-match {
-  outline: 2px solid var(--highlight-single-outline); /* Green outline */
-}
-
-/* --- Color Swatches Matching Input --- */
-.color-swatch.match {
-  opacity: 1;
-}
-
-.color-swatch:not(.match) {
-  opacity: 0.3;
-}
-
-.color-swatch.first-match {
-  border: 2px solid var(--first-match-border);
+  outline: 2px solid var(--highlight-single-outline);
 }
 
 /* --- Tab Styles --- */
