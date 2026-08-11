@@ -771,16 +771,24 @@ function renderMagWeeklyPocketEngraving(caseId) {
     <label><strong>Pocket Engraving:</strong></label>
     ${row('Daily', `mw-pocket-daily-${caseId}`, options.daily)}
     ${row('Weekly', `mw-pocket-weekly-${caseId}`, options.weekly)}
-    <div id="mw-pocket-none-${caseId}" class="option-buttons mag-day-buttons">
+    <div id="mw-pocket-choice-${caseId}" class="option-buttons mag-day-buttons">
+      <button type="button" data-option="Custom">Custom</button>
       <button type="button" data-option="None" class="selected">None</button>
     </div>
+    <input type="text" id="mw-pocket-custom-${caseId}" class="mag-custom-input"
+           placeholder="e.g. Breakfast + Lunch + Dinner" style="display:none;">
   `;
 
-  // Daily, Weekly and None are one mutually exclusive choice
+  // Daily, Weekly, Custom and None are one mutually exclusive choice
   pocketDiv.querySelectorAll('button').forEach(button => {
     button.addEventListener('click', () => {
       pocketDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
       button.classList.add('selected');
+
+      const customInput = document.getElementById(`mw-pocket-custom-${caseId}`);
+      customInput.style.display = button.dataset.option === 'Custom' ? 'block' : 'none';
+      if (button.dataset.option === 'Custom') customInput.focus();
+
       checkSkippedFields(caseId);
     });
   });
@@ -789,7 +797,19 @@ function renderMagWeeklyPocketEngraving(caseId) {
 function magWeeklyPocketTokens(caseId) {
   const selected = document.querySelector(`#mw-pocket-${caseId} .selected`)?.dataset.option;
   if (!selected || selected === 'None') return [];
-  return selected.split(' + ');
+
+  const raw = selected === 'Custom'
+    ? (document.getElementById(`mw-pocket-custom-${caseId}`)?.value.trim() || '')
+    : selected;
+  if (!raw) return [];
+
+  const tokens = raw.split('+').map(token => token.trim()).filter(Boolean);
+
+  // A single value with no "+" goes on every piece
+  const pieceCount = magWeeklyPieces(caseId).length;
+  if (tokens.length === 1 && pieceCount > 1) return Array(pieceCount).fill(tokens[0]);
+
+  return tokens;
 }
 
 // ============================================================
