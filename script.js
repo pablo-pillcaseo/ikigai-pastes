@@ -1,12 +1,75 @@
+// ============================================================
+// VALIDATION HELPERS
+// ============================================================
+
+function flashValidation(element) {
+  if (!element) return;
+  element.classList.remove('validation-flash', 'validation-error');
+  void element.offsetWidth;
+  element.classList.add('validation-flash');
+  element.addEventListener('animationend', () => {
+    element.classList.remove('validation-flash');
+  }, { once: true });
+}
+
+function addValidationError(element) {
+  if (!element) return;
+  element.classList.add('validation-error');
+}
+
+function clearValidationError(element) {
+  if (!element) return;
+  element.classList.remove('validation-error', 'validation-flash');
+}
+
+function clearCaseValidation(caseId) {
+  const caseDiv = document.getElementById(caseId);
+  if (!caseDiv) return;
+  caseDiv.querySelectorAll('.validation-error, .validation-flash').forEach(el => {
+    el.classList.remove('validation-error', 'validation-flash');
+  });
+} 
+
+function watchForSelection(container) {
+  if (!container || container._validationWatched) return;
+  container._validationWatched = true;
+
+  container.addEventListener('click', (e) => {
+    if (e.target.tagName === 'BUTTON' || e.target.closest('.color-swatch')) {
+      clearValidationError(container);
+    }
+  });
+
+  container.addEventListener('change', () => {
+    clearValidationError(container);
+  });
+}
+
+function checkSkippedFields(caseId) {
+  const pocketDiv = document.getElementById(`pocket-options-${caseId}`);
+  const sizeDiv = document.getElementById(`size-options-${caseId}`);
+  const pocket = document.querySelector(`#pocket-options-${caseId} .selected`)?.innerText;
+  const size = document.querySelector(`#size-options-${caseId} .selected`)?.innerText;
+
+  const skipped = [];
+  if (!pocket && pocketDiv) {
+    flashValidation(pocketDiv);
+    skipped.push(pocketDiv);
+  }
+  if (!size && sizeDiv) {
+    flashValidation(sizeDiv);
+    skipped.push(sizeDiv);
+  }
+  return skipped;
+}
+
+// ============================================================
+// CASE MANAGEMENT
+// ============================================================
+
 let caseCounter = 0;
 const cases = [];
 
-// --- Removed Keyboard Input Logic ---
-
-// Add event listener for mouse click (if needed for other UI resets)
-// (No keyboard input is handled)
-
-// Create a new case
 function addCase() {
   caseCounter++;
   const caseId = `case-${caseCounter}`;
@@ -30,42 +93,51 @@ function addCase() {
 
     <!-- Color Selection -->
     <div id="colors-${caseId}">
-      <!-- Color swatches will be generated here -->
     </div>
 
     <!-- Engravings -->
     <div id="engravings-${caseId}" class="engravings">
-      <!-- Engraving inputs will be generated here -->
     </div>
     
     <hr>
   `;
-  
+
   const removeButton = document.createElement('button');
   removeButton.className = 'emoji-button remove-button';
   removeButton.innerText = '❌';
   removeButton.onclick = () => removeCase(caseId);
   caseDiv.insertBefore(removeButton, caseDiv.firstChild);
 
-  // Generate buttons for Pocket options
   const pocketOptionsDiv = caseDiv.querySelector(`#pocket-options-${caseId}`);
-  const pockets = ['NANO', 'MISSION', 'WEEKLY', 'AMPM', '2-WEEK'];
+  const pockets = ['NANO', 'MISSION', 'WEEKLY', 'AMPM', '2-WEEK', 'MAG'];
   pockets.forEach(pocket => {
     const button = document.createElement('button');
     button.type = 'button';
     button.innerText = pocket;
     button.onclick = () => {
-      // Remove 'selected' class from other buttons
       pocketOptionsDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
       button.classList.add('selected');
+      clearValidationError(pocketOptionsDiv);
+      updateSizeOptions(caseId, pocket);
       updateCaseType(caseId);
     };
     pocketOptionsDiv.appendChild(button);
   });
 
-  // Generate buttons for Size options
-  const sizeOptionsDiv = caseDiv.querySelector(`#size-options-${caseId}`);
-  const sizes = ['PILL', 'VITAMIN', 'VITAMIN XL'];
+  document.getElementById('case-list').appendChild(caseDiv);
+  cases.push(caseId);
+
+  generateSizeButtons(caseId, ['XS', 'PILL', 'VITAMIN', 'VITAMIN XL', 'VITAMIN 2XL']);
+
+  watchForSelection(pocketOptionsDiv);
+  watchForSelection(caseDiv.querySelector(`#size-options-${caseId}`));
+
+  updateCaseHeadings();
+}
+
+function generateSizeButtons(caseId, sizes) {
+  const sizeOptionsDiv = document.getElementById(`size-options-${caseId}`);
+  sizeOptionsDiv.innerHTML = '';
   sizes.forEach(size => {
     const button = document.createElement('button');
     button.type = 'button';
@@ -73,14 +145,24 @@ function addCase() {
     button.onclick = () => {
       sizeOptionsDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
       button.classList.add('selected');
+      clearValidationError(sizeOptionsDiv);
+      // If this is a MAG case, the AM/PM pocket-engraving option depends on size
+      const pocket = document.querySelector(`#pocket-options-${caseId} .selected`)?.innerText;
+      if (pocket === 'MAG') {
+        refreshMagPocketModifier(caseId);
+      }
     };
     sizeOptionsDiv.appendChild(button);
   });
+  watchForSelection(sizeOptionsDiv);
+}
 
-  document.getElementById('case-list').appendChild(caseDiv);
-  cases.push(caseId);
-
-  updateCaseHeadings(); // Update headings after adding a case
+function updateSizeOptions(caseId, pocket) {
+  if (pocket === 'MAG') {
+    generateSizeButtons(caseId, ['PILL', 'VITAMIN', 'VITAMIN XL', 'AM/PM']);
+  } else {
+    generateSizeButtons(caseId, ['XS', 'PILL', 'VITAMIN', 'VITAMIN XL', 'VITAMIN 2XL']);
+  }
 }
 
 function removeCase(caseId) {
@@ -89,7 +171,10 @@ function removeCase(caseId) {
   if (index > -1) {
     cases.splice(index, 1);
   }
-  updateCaseHeadings(); // Update headings after removing a case
+  delete magEntries[caseId];
+  delete magEntryCounters[caseId];
+  delete magModes[caseId];
+  updateCaseHeadings();
 }
 
 function updateCaseHeadings() {
@@ -104,20 +189,32 @@ function updateCaseHeadings() {
   });
 }
 
-// Update the case UI based on the selected pocket
 function updateCaseType(caseId) {
   const pocket = document.querySelector(`#pocket-options-${caseId} .selected`)?.innerText;
   const colorsDiv = document.getElementById(`colors-${caseId}`);
   const engravingsDiv = document.getElementById(`engravings-${caseId}`);
 
-  // Clear previous inputs
   colorsDiv.innerHTML = '';
   engravingsDiv.innerHTML = '';
 
-  if (!pocket) return; // Exit if no pocket selected
+  if (!pocket) return;
 
-  if (pocket === 'AMPM' || pocket === '2-WEEK') {
-    // For AMPM / 2-WEEK cases: two color selections and two lid engraving inputs
+  if (pocket === 'MAG') {
+    colorsDiv.innerHTML = '';
+    engravingsDiv.innerHTML = `
+      <div class="mag-mode-toggle">
+        <label><strong>Mode:</strong></label>
+        <div class="option-buttons mag-mode-buttons">
+          <button type="button" data-mode="single" onclick="setMagMode('${caseId}', 'single')">Single</button>
+          <button type="button" data-mode="set" class="selected" onclick="setMagMode('${caseId}', 'set')">Set</button>
+        </div>
+      </div>
+      <div class="mag-set" id="mag-set-${caseId}"></div>
+      <button class="emoji-button mag-add-button" id="mag-add-btn-${caseId}" onclick="addMagEntry('${caseId}')" title="Add Mag Entry">➕</button>
+    `;
+    initMagSet(caseId, 7);
+
+  } else if (pocket === 'AMPM' || pocket === '2-WEEK') {
     const firstLabel = pocket === 'AMPM' ? 'AM Color' : 'RIGHT & TOP Color';
     const secondLabel = pocket === 'AMPM' ? 'PM Color' : 'LEFT & BOTTOM Color';
     const firstLidLabel = pocket === 'AMPM' ? 'AM Left Lid Engraving' : 'RIGHT & TOP Lid Engraving';
@@ -132,6 +229,9 @@ function updateCaseType(caseId) {
     generateColorSwatches(`first-color-options-${caseId}`, `first-color-${caseId}`);
     generateColorSwatches(`second-color-options-${caseId}`, `second-color-${caseId}`);
 
+    watchForSelection(document.getElementById(`first-color-options-${caseId}`));
+    watchForSelection(document.getElementById(`second-color-options-${caseId}`));
+
     engravingsDiv.innerHTML = `
       <label>${firstLidLabel}:
         <input type="text" id="first-lid-${caseId}" placeholder="Optional">
@@ -143,34 +243,360 @@ function updateCaseType(caseId) {
     `;
     setupDOTWSelection(caseId);
   } else {
-    // For other cases: one color selection and optional lid engraving input
     colorsDiv.innerHTML = `
       <label><strong>Color:</strong></label>
       <div id="color-options-${caseId}" class="color-swatches"></div>
     `;
     generateColorSwatches(`color-options-${caseId}`, `color-${caseId}`);
+    watchForSelection(document.getElementById(`color-options-${caseId}`));
 
     let engravingsHTML = `
       <label>Lid Engraving:
         <input type="text" id="lid-${caseId}" placeholder="Optional">
       </label>
     `;
-    // For Mission cases, add custom pocket engraving options
     if (pocket === 'MISSION') {
       engravingsHTML += generateMissionEngravingsSelection(caseId);
-    } else if (pocket !== 'NANO') {
+    } else if (pocket === 'NANO') {
+      engravingsHTML += generateNanoPocketEngravingsSelection(caseId);
+    } else {
       engravingsHTML += generateDOTWSelection(caseId);
     }
     engravingsDiv.innerHTML = engravingsHTML;
     if (pocket === 'MISSION') {
       setupMissionEngravingsSelection(caseId);
-    } else if (pocket !== 'NANO') {
+    } else if (pocket === 'NANO') {
+      setupNanoPocketEngravingsSelection(caseId);
+    } else {
       setupDOTWSelection(caseId);
     }
   }
 }
 
-// Generate the DOTW (Days of the Week) selection (used for non–MISSION cases)
+// ============================================================
+// MAG DYNAMIC ENTRY MANAGEMENT
+// ============================================================
+
+const magEntries = {};
+const magEntryCounters = {};
+const magModes = {};
+
+function initMagSet(caseId, count) {
+  magEntries[caseId] = [];
+  magEntryCounters[caseId] = 0;
+  magModes[caseId] = count === 1 ? 'single' : 'set';
+  for (let i = 0; i < count; i++) {
+    addMagEntry(caseId);
+  }
+}
+
+function setMagMode(caseId, mode) {
+  magModes[caseId] = mode;
+  const modeButtons = document.querySelectorAll(`#engravings-${caseId} .mag-mode-buttons button`);
+  modeButtons.forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.mode === mode);
+  });
+
+  const magSetDiv = document.getElementById(`mag-set-${caseId}`);
+  const addBtn = document.getElementById(`mag-add-btn-${caseId}`);
+
+  if (mode === 'single') {
+    magSetDiv.innerHTML = '';
+    magEntries[caseId] = [];
+    magEntryCounters[caseId] = 0;
+    addMagEntry(caseId);
+    addBtn.style.display = 'none';
+  } else {
+    magSetDiv.innerHTML = '';
+    magEntries[caseId] = [];
+    magEntryCounters[caseId] = 0;
+    for (let i = 0; i < 7; i++) {
+      addMagEntry(caseId);
+    }
+    addBtn.style.display = '';
+  }
+}
+
+function refreshMagPocketModifier(caseId) {
+  const entries = magEntries[caseId] || [];
+  entries.forEach(entryId => {
+    renderMagPocketModifier(caseId, entryId);
+    updateMagSummary(caseId, entryId);
+  });
+}
+
+function addMagEntry(caseId) {
+  magEntryCounters[caseId] = (magEntryCounters[caseId] || 0) + 1;
+  const entryId = magEntryCounters[caseId];
+  if (!magEntries[caseId]) magEntries[caseId] = [];
+  magEntries[caseId].push(entryId);
+
+  const magSetDiv = document.getElementById(`mag-set-${caseId}`);
+  const entryDiv = document.createElement('div');
+  entryDiv.className = 'mag-entry';
+  entryDiv.id = `mag-entry-${caseId}-${entryId}`;
+  entryDiv.innerHTML = `
+    <div class="mag-entry-header">
+      <h4 class="mag-entry-title"></h4>
+      <span class="mag-summary" id="mag-summary-${caseId}-${entryId}"></span>
+      <span class="mag-toggle" id="mag-toggle-${caseId}-${entryId}">▼</span>
+      <button class="mag-remove-btn" title="Remove this entry" onclick="event.stopPropagation(); removeMagEntry('${caseId}', ${entryId})">✕</button>
+    </div>
+    <div class="mag-entry-body" id="mag-body-${caseId}-${entryId}">
+      <label><strong>Color:</strong></label>
+      <div id="mag-color-options-${caseId}-${entryId}" class="color-swatches"></div>
+
+      <label><strong>Lid Engraving:</strong></label>
+      <div id="mag-lid-options-${caseId}-${entryId}" class="option-buttons mag-day-buttons"></div>
+      <input type="text" id="mag-lid-custom-${caseId}-${entryId}" class="mag-custom-input" placeholder="Custom lid text" style="display:none;">
+
+      <label><strong>Pocket Engraving:</strong></label>
+      <div class="mag-pocket-engraving-row">
+        <div id="mag-pocket-modifier-${caseId}-${entryId}" class="mag-pocket-modifier"></div>
+        <div id="mag-pocket-options-${caseId}-${entryId}" class="option-buttons mag-day-buttons"></div>
+      </div>
+      <input type="text" id="mag-pocket-custom-${caseId}-${entryId}" class="mag-custom-input" placeholder="Custom pocket text" style="display:none;">
+    </div>
+  `;
+  magSetDiv.appendChild(entryDiv);
+
+  const header = entryDiv.querySelector('.mag-entry-header');
+  header.addEventListener('click', (e) => {
+    if (e.target.closest('.mag-remove-btn')) return;
+    toggleMagEntry(caseId, entryId);
+  });
+
+  generateColorSwatches(`mag-color-options-${caseId}-${entryId}`, `mag-color-${caseId}-${entryId}`);
+  generateMagEngravingOptions(`mag-lid-options-${caseId}-${entryId}`, caseId, entryId, 'lid');
+  generateMagEngravingOptions(`mag-pocket-options-${caseId}-${entryId}`, caseId, entryId, 'pocket');
+  
+  renderMagPocketModifier(caseId, entryId);
+
+  watchForSelection(document.getElementById(`mag-color-options-${caseId}-${entryId}`));
+
+  updateMagHeadings(caseId);
+}
+
+function removeMagEntry(caseId, entryId) {
+  const entries = magEntries[caseId];
+  if (!entries || entries.length <= 1) return;
+  const idx = entries.indexOf(entryId);
+  if (idx > -1) entries.splice(idx, 1);
+  const el = document.getElementById(`mag-entry-${caseId}-${entryId}`);
+  if (el) el.remove();
+  updateMagHeadings(caseId);
+}
+
+function updateMagHeadings(caseId) {
+  const entries = magEntries[caseId] || [];
+  const total = entries.length;
+  const isSingle = magModes[caseId] === 'single';
+  entries.forEach((entryId, idx) => {
+    const title = document.querySelector(`#mag-entry-${caseId}-${entryId} .mag-entry-title`);
+    if (title) {
+      title.textContent = isSingle ? 'Mag (Single)' : `Mag ${idx + 1} of ${total}`;
+    }
+    const removeBtn = document.querySelector(`#mag-entry-${caseId}-${entryId} .mag-remove-btn`);
+    if (removeBtn) {
+      removeBtn.style.display = (total <= 1 || isSingle) ? 'none' : '';
+    }
+  });
+}
+
+function toggleMagEntry(caseId, entryId) {
+  const body = document.getElementById(`mag-body-${caseId}-${entryId}`);
+  const toggle = document.getElementById(`mag-toggle-${caseId}-${entryId}`);
+  if (body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+    toggle.classList.remove('collapsed');
+  } else {
+    body.classList.add('collapsed');
+    toggle.classList.add('collapsed');
+  }
+}
+
+function renderMagPocketModifier(caseId, entryId) {
+  const modifierDiv = document.getElementById(`mag-pocket-modifier-${caseId}-${entryId}`);
+  if (!modifierDiv) return;
+  modifierDiv.innerHTML = '';
+
+  const caseSize = document.querySelector(`#size-options-${caseId} .selected`)?.innerText;
+  if (caseSize !== 'AM/PM') return; // only meaningful when MAG case is sized AM/PM
+
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'mag-ampm-toggle';
+  toggle.id = `mag-pocket-ampm-toggle-${caseId}-${entryId}`;
+  toggle.textContent = 'AM/PM';
+  toggle.title = 'Prefix pocket engraving with AM/PM (combines with day if selected)';
+
+  toggle.addEventListener('click', () => {
+    const wasOff = !toggle.classList.contains('selected');
+    toggle.classList.toggle('selected');
+
+    const entries = magEntries[caseId] || [];
+    // Propagate to remaining entries when first-entry toggles on and no others are toggled yet
+    if (wasOff && entries.length > 1 && entries[0] === entryId && !magSeriesHasAmPmToggle(caseId)) {
+      entries.slice(1).forEach(eid => {
+        const t = document.getElementById(`mag-pocket-ampm-toggle-${caseId}-${eid}`);
+        if (t) t.classList.add('selected');
+        updateMagSummary(caseId, eid);
+      });
+    }
+    updateMagSummary(caseId, entryId);
+  });
+
+  modifierDiv.appendChild(toggle);
+}
+
+function magSeriesHasAmPmToggle(caseId) {
+  const entries = magEntries[caseId] || [];
+  for (let i = 1; i < entries.length; i++) {
+    const t = document.getElementById(`mag-pocket-ampm-toggle-${caseId}-${entries[i]}`);
+    if (t && t.classList.contains('selected')) return true;
+  }
+  return false;
+}
+
+function isMagAmPmActive(caseId, entryId) {
+  return document.getElementById(`mag-pocket-ampm-toggle-${caseId}-${entryId}`)?.classList.contains('selected') || false;
+}
+
+function generateMagEngravingOptions(containerId, caseId, entryId, type) {
+  const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const options = [...days, 'Custom', 'None'];
+
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+
+  options.forEach((option) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.innerText = option;
+    button.dataset.option = option;
+
+    button.addEventListener('click', () => {
+      container.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+      button.classList.add('selected');
+
+      const customInput = document.getElementById(`mag-${type}-custom-${caseId}-${entryId}`);
+      customInput.style.display = button.dataset.option === 'Custom' ? 'block' : 'none';
+
+      const magDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+      const entries = magEntries[caseId] || [];
+      if (entries.length > 1 && entries[0] === entryId && magDays.includes(button.dataset.option)) {
+        if (!magSeriesHasSelections(caseId, type)) {
+          autoFillMagDays(caseId, type, button.dataset.option);
+        }
+      }
+
+      checkSkippedFields(caseId);
+      updateMagSummary(caseId, entryId);
+    });
+
+    if (option === 'None') button.classList.add('selected');
+    container.appendChild(button);
+  });
+}
+
+function magSeriesHasSelections(caseId, type) {
+  const entries = magEntries[caseId] || [];
+  for (let i = 1; i < entries.length; i++) {
+    const selected = document.querySelector(`#mag-${type}-options-${caseId}-${entries[i]} .selected`);
+    if (selected && selected.dataset.option !== 'None') return true;
+  }
+  return false;
+}
+
+function magColorsHaveSelections(caseId) {
+  const entries = magEntries[caseId] || [];
+  for (let i = 1; i < entries.length; i++) {
+    if (document.querySelector(`input[name="mag-color-${caseId}-${entries[i]}"]:checked`)) return true;
+  }
+  return false;
+}
+
+function autoFillMagColor(caseId, colorName) {
+  const entries = magEntries[caseId] || [];
+  for (let i = 1; i < entries.length; i++) {
+    const eid = entries[i];
+    const container = document.getElementById(`mag-color-options-${caseId}-${eid}`);
+    if (!container) continue;
+    const radio = container.querySelector(`input[value="${colorName}"]`);
+    if (radio) {
+      radio.checked = true;
+      container.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+      radio.closest('.color-swatch').classList.add('selected');
+    }
+    updateMagSummary(caseId, eid);
+  }
+}
+
+function autoFillMagDays(caseId, type, startDay) {
+  const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const startIndex = days.indexOf(startDay);
+  const entries = magEntries[caseId] || [];
+  const propagateAmPm = type === 'pocket' && isMagAmPmActive(caseId, entries[0]);
+
+  for (let i = 1; i < entries.length; i++) {
+    const eid = entries[i];
+    const dayIndex = (startIndex + i) % 7;
+    const targetDay = days[dayIndex];
+    const container = document.getElementById(`mag-${type}-options-${caseId}-${eid}`);
+    if (!container) continue;
+
+    container.querySelectorAll('button').forEach(btn => {
+      btn.classList.remove('selected');
+      if (btn.dataset.option === targetDay) btn.classList.add('selected');
+    });
+
+    const customInput = document.getElementById(`mag-${type}-custom-${caseId}-${eid}`);
+    if (customInput) customInput.style.display = 'none';
+    
+    if (propagateAmPm) {
+      const t = document.getElementById(`mag-pocket-ampm-toggle-${caseId}-${eid}`);
+      if (t) t.classList.add('selected');
+    }
+
+
+    updateMagSummary(caseId, eid);
+  }
+}
+
+function updateMagSummary(caseId, entryId) {
+  const summarySpan = document.getElementById(`mag-summary-${caseId}-${entryId}`);
+  if (!summarySpan) return;
+
+  const color = document.querySelector(`input[name="mag-color-${caseId}-${entryId}"]:checked`)?.value || '';
+  const lidOption = document.querySelector(`#mag-lid-options-${caseId}-${entryId} .selected`)?.dataset.option || 'None';
+  const pocketOption = document.querySelector(`#mag-pocket-options-${caseId}-${entryId} .selected`)?.dataset.option || 'None';
+
+  let lidText = lidOption;
+  if (lidOption === 'Custom') {
+    lidText = document.getElementById(`mag-lid-custom-${caseId}-${entryId}`)?.value.trim() || 'Custom';
+  }
+  let pocketText = pocketOption;
+  if (pocketOption === 'Custom') {
+    pocketText = document.getElementById(`mag-pocket-custom-${caseId}-${entryId}`)?.value.trim() || 'Custom';
+  }
+  if (isMagAmPmActive(caseId, entryId) && pocketOption !== 'None') {
+    pocketText = `AM/PM ${pocketText}`;
+  } else if (isMagAmPmActive(caseId, entryId) && pocketOption === 'None') {
+    pocketText = 'AM/PM';
+  }
+
+  const parts = [];
+  if (color) parts.push(color);
+  if (lidText && lidText !== 'None') parts.push(`Lid: ${lidText}`);
+  if (pocketText && pocketText !== 'None') parts.push(`Pkt: ${pocketText}`);
+
+  summarySpan.textContent = parts.join(' · ');
+}
+
+// ============================================================
+// DOTW SELECTION
+// ============================================================
+
 function generateDOTWSelection(caseId) {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'None'];
   let dotwHTML = `<label><strong>Start Day of the Week (DOTW):</strong></label>
@@ -206,8 +632,8 @@ function setupDOTWSelection(caseId) {
       button.addEventListener('click', () => {
         buttons.forEach(btn => btn.classList.remove('selected'));
         button.classList.add('selected');
+        checkSkippedFields(caseId);
       });
-      // Select 'None' by default
       if (button.getAttribute('data-day') === 'None') {
         button.classList.add('selected');
       }
@@ -215,7 +641,42 @@ function setupDOTWSelection(caseId) {
   }
 }
 
-// Generate Mission Engravings options for Mission cases
+// ============================================================
+// NANO POCKET ENGRAVINGS
+// ============================================================
+
+function generateNanoPocketEngravingsSelection(caseId) {
+  const options = ['AM','PM','LUNCH','EXTRA','SUN','MON','TUE','WED','THU','FRI','SAT','None'];
+  let html = `<label><strong>Nano In-Pocket Engraving:</strong></label>
+  <div id="nano-pocket-engraving-options-${caseId}" class="option-buttons nano-pocket-engraving-buttons">`;
+  options.forEach(option => {
+    html += `<button type="button" data-option="${option}">${option}</button>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+function setupNanoPocketEngravingsSelection(caseId) {
+  const nanoOptionsDiv = document.getElementById(`nano-pocket-engraving-options-${caseId}`);
+  if (!nanoOptionsDiv) return;
+
+  const buttons = nanoOptionsDiv.querySelectorAll('button');
+  buttons.forEach(button => {
+    button.addEventListener('click', () => {
+      buttons.forEach(btn => btn.classList.remove('selected'));
+      button.classList.add('selected');
+      checkSkippedFields(caseId);
+    });
+    if (button.getAttribute('data-option') === 'None') {
+      button.classList.add('selected');
+    }
+  });
+}
+
+// ============================================================
+// MISSION ENGRAVINGS
+// ============================================================
+
 function generateMissionEngravingsSelection(caseId) {
   const options = ['AM-LUNCH-PM', 'FRI-SAT-SUN', 'AM-PM-EXTRA', 'BREAKFAST-LUNCH-DINNER'];
   let html = `<label><strong>Mission Engravings Options:</strong></label>
@@ -231,11 +692,11 @@ function setupMissionEngravingsSelection(caseId) {
   const missionOptionsDiv = document.getElementById(`mission-engraving-options-${caseId}`);
   if (missionOptionsDiv) {
     const buttons = missionOptionsDiv.querySelectorAll('button');
-    // Set "None" as default if available
     buttons.forEach(button => {
       button.addEventListener('click', () => {
         buttons.forEach(btn => btn.classList.remove('selected'));
         button.classList.add('selected');
+        checkSkippedFields(caseId);
       });
       if (button.getAttribute('data-option') === 'None') {
         button.classList.add('selected');
@@ -244,11 +705,14 @@ function setupMissionEngravingsSelection(caseId) {
   }
 }
 
-// Generate color swatches (shared by all cases)
+// ============================================================
+// COLOR SWATCHES
+// ============================================================
+
 function generateColorSwatches(containerId, inputName) {
   const colors = getColors();
   const container = document.getElementById(containerId);
-  container.innerHTML = ''; // Clear any existing swatches
+  container.innerHTML = '';
 
   colors.forEach(color => {
     const label = document.createElement('label');
@@ -282,6 +746,18 @@ function generateColorSwatches(containerId, inputName) {
       swatch.style.backgroundImage = splatterGradients.join(', ');
       swatch.style.backgroundPosition = backgroundPositions.join(', ');
       swatch.style.backgroundSize = backgroundSizes.join(', ');
+    } else if (color.isSmearedSplatter) {
+      swatch.style.backgroundColor = color.code;
+      const gradients = [];
+      color.splatterColors.forEach((splatterColor, index) => {
+        const angle = 45 + (index * 30);
+        const offset = index * 15;
+        gradients.push(`linear-gradient(${angle}deg, transparent ${offset}%, ${splatterColor} ${offset + 10}%, ${splatterColor} ${offset + 20}%, transparent ${offset + 30}%)`);
+      });
+      gradients.push(`radial-gradient(ellipse at 20% 50%, ${color.splatterColors[0]} 0%, transparent 40%)`);
+      gradients.push(`radial-gradient(ellipse at 70% 30%, ${color.splatterColors[1] || color.splatterColors[0]} 0%, transparent 35%)`);
+      gradients.push(`radial-gradient(ellipse at 50% 80%, ${color.splatterColors[0]} 0%, transparent 30%)`);
+      swatch.style.backgroundImage = gradients.join(', ');
     } else {
       swatch.style.backgroundColor = color.code;
     }
@@ -296,9 +772,29 @@ function generateColorSwatches(containerId, inputName) {
 
     input.addEventListener('change', () => {
       const allSwatches = container.querySelectorAll('.color-swatch');
-      allSwatches.forEach(swatch => swatch.classList.remove('selected'));
+      allSwatches.forEach(s => s.classList.remove('selected'));
       label.classList.add('selected');
-      // Focus handling (if needed) can be added here
+
+      clearValidationError(container);
+
+      const caseIdMatch = containerId.match(/(?:color-options-|first-color-options-|second-color-options-)(case-\d+)/);
+      if (caseIdMatch) {
+        checkSkippedFields(caseIdMatch[1]);
+      }
+
+      const match = inputName.match(/^mag-color-(case-\d+)-(\d+)$/);
+      if (match) {
+        const matchCaseId = match[1];
+        const matchEntryNum = parseInt(match[2]);
+        updateMagSummary(matchCaseId, matchEntryNum);
+
+        checkSkippedFields(matchCaseId);
+
+        const entries = magEntries[matchCaseId] || [];
+        if (entries.length > 1 && entries[0] === matchEntryNum && !magColorsHaveSelections(matchCaseId)) {
+          autoFillMagColor(matchCaseId, color.name);
+        }
+      }
     });
 
     container.appendChild(label);
@@ -313,65 +809,207 @@ function getColors() {
     { name: 'Forest Green', code: '#899D7A' },
     { name: 'Designer Red', code: '#EB5047' },
     { name: 'Ikigai Orange', code: '#EB7114' },
+    { name: 'Mango', code: '#FFB347' },
     { name: 'Golden Rice', code: '#F8B40E' },
     { name: 'Emerald Green', code: '#34C87E' },
     { name: 'Bahama Blue', code: '#00D3E8' },
     { name: 'Purple Punch', code: '#CE55C4' },
     { name: 'Pink Panther', code: '#E967A6' },
     { name: 'Rose Gold', code: '#FFCAC4' },
-    { name: 'Mellow Yellow', code: '#FFE331' },
     { name: 'Coffee', code: '#4B3621' },
     { name: 'Gunmetal', code: '#2A3439' },
-    { name: 'Indigo', code: '#3631CC'},
+    { name: 'Indigo', code: '#3631CC' },
+    { name: 'Teal', code: '#008080' },
+    { name: 'Lavender', code: '#C6B7E2' },
+    { name: 'Maroon', code: '#800020' },
+    {
+      name: 'Cherry Blossom',
+      code: '#00D3E8',
+      isSplatter: true,
+      splatterColors: ['#FFB7C5', '#E0DFCB']
+    },
+    { name: 'Pastel Green', code: '#B4E7CE' },
+    { name: 'Sky Blue', code: '#87CEEB' },
+    {
+      name: 'Camo',
+      code: '#899D7A',
+      isSplatter: true,
+      splatterColors: ['#FFCAC4', '#000000', '#4B3621']
+    },
+    {
+      name: 'Milky Way',
+      code: '#87CEEB',
+      isSmearedSplatter: true,
+      splatterColors: ['#9DD9DD', '#E0DFCB']
+    },
     {
       name: 'Black + Blue Splatter',
       code: '#000000',
       isSplatter: true,
-      splatterColors: ['#00D3E8'],
+      splatterColors: ['#00D3E8']
+    },
+    {
+      name: 'Black + Gold Splatter',
+      code: '#000000',
+      isSplatter: true,
+      splatterColors: ['#FFD700']
     },
     {
       name: 'Disco Splatter',
       code: '#CE55C4',
       isSplatter: true,
-      splatterColors: ['#00D3E8'],
+      splatterColors: ['#00D3E8']
     },
     {
-      name: 'Fire + Ice Splatter',
+      name: 'Dancing Dragon',
       code: '#EB5047',
+      isSmearedSplatter: true,
+      splatterColors: ['#F8B40E']
+    },
+    {
+      name: 'Watercolor',
+      code: '#E0DFCB',
+      isSmearedSplatter: true,
+      splatterColors: ['#D64C8B', '#4883E8', '#F8D34E']
+    },
+    {
+      name: 'Cotton Candy',
+      code: '#FFCAC4',
       isSplatter: true,
-      splatterColors: ['#E0DFCB', '#4883E8'],
+      splatterColors: ['#E967A6', '#87CEEB', '#CE55C4']
+    },
+    {
+      name: 'Black + Red Splatter',
+      code: '#000000',
+      isSplatter: true,
+      splatterColors: ['#EB5047']
+    },
+    {
+      name: 'Acqua Splatter',
+      code: '#87CEEB',
+      isSplatter: true,
+      splatterColors: ['#4883E8', '#FFFFFF']
+    },
+    {
+      name: 'Blood Moon',
+      code: '#000000',
+      isSmearedSplatter: true,
+      splatterColors: ['#EB5047', '#E0DFCB']
+    },
+    {
+      name: 'Desert Rain',
+      code: '#EB7114',
+      isSplatter: true,
+      splatterColors: ['#EB5047', '#4883E8']
+    },
+    {
+      name: 'Reptile Stripes',
+      code: '#C9A84C',
+      isSmearedSplatter: true,
+      splatterColors: ['#4A9E8A', '#2D7A6B']
+    },
+    {
+      name: 'Dark Blue', code: '#0A1F5C'
     },
   ];
 }
 
-// --- Generate and Copy Notes ---
+// ============================================================
+// GENERATE AND COPY NOTES (with visual validation)
+// ============================================================
+
 function generateAndCopyNotes() {
   let notes = '';
   let hasError = false;
+  const errorElements = [];
 
   cases.forEach((caseId, index) => {
     const caseNumber = index + 1;
+    const pocketDiv = document.getElementById(`pocket-options-${caseId}`);
+    const sizeDiv = document.getElementById(`size-options-${caseId}`);
     const pocket = document.querySelector(`#pocket-options-${caseId} .selected`)?.innerText || '';
     const size = document.querySelector(`#size-options-${caseId} .selected`)?.innerText || '';
 
-    if (!pocket || !size) {
-      alert(`Please select both Pocket and Size for Case ${caseNumber}.`);
+    if (!pocket) {
+      errorElements.push(pocketDiv);
       hasError = true;
-      return;
     }
+    if (!size) {
+      errorElements.push(sizeDiv);
+      hasError = true;
+    }
+
+    if (!pocket || !size) return;
 
     const isAMPM = pocket === 'AMPM';
     const isTwoWeek = pocket === '2-WEEK';
+    const isMAG = pocket === 'MAG';
 
-    if (isAMPM || isTwoWeek) {
+    if (isMAG) {
+      const entries = magEntries[caseId] || [];
+      const total = entries.length;
+      const isSingleMode = magModes[caseId] === 'single';
+
+      entries.forEach((entryId, entryIdx) => {
+        const colorContainer = document.getElementById(`mag-color-options-${caseId}-${entryId}`);
+        const color = document.querySelector(`input[name="mag-color-${caseId}-${entryId}"]:checked`)?.value;
+        if (!color) {
+          const body = document.getElementById(`mag-body-${caseId}-${entryId}`);
+          const toggle = document.getElementById(`mag-toggle-${caseId}-${entryId}`);
+          if (body && body.classList.contains('collapsed')) {
+            body.classList.remove('collapsed');
+            toggle.classList.remove('collapsed');
+          }
+          errorElements.push(colorContainer);
+          hasError = true;
+          return;
+        }
+
+        const lidOption = document.querySelector(`#mag-lid-options-${caseId}-${entryId} .selected`)?.dataset.option || 'None';
+        const pocketOption = document.querySelector(`#mag-pocket-options-${caseId}-${entryId} .selected`)?.dataset.option || 'None';
+
+        let lidText = '';
+        if (lidOption === 'Custom') {
+          lidText = document.getElementById(`mag-lid-custom-${caseId}-${entryId}`)?.value.trim() || '';
+        } else if (lidOption !== 'None') {
+          lidText = lidOption;
+        }
+
+        let pocketText = '';
+        if (pocketOption === 'Custom') {
+          pocketText = document.getElementById(`mag-pocket-custom-${caseId}-${entryId}`)?.value.trim() || '';
+        } else if (pocketOption !== 'None') {
+          pocketText = pocketOption;
+        }
+        if (isMagAmPmActive(caseId, entryId)) {
+          pocketText = pocketText ? `AM/PM ${pocketText}` : 'AM/PM';
+        }
+
+        if (isSingleMode) {
+          notes += `${caseNumber}) MAG ${size} / ${color.toUpperCase()}`;
+        } else {
+          notes += `${caseNumber}) MAG ${size} [${entryIdx + 1}/${total}] / ${color.toUpperCase()}`;
+        }
+        if (lidText) notes += ` = LID = ${lidText}`;
+        if (pocketText) notes += ` = POCKET = ${pocketText}`;
+        notes += `\n`;
+      });
+
+    } else if (isAMPM || isTwoWeek) {
+      const firstColorContainer = document.getElementById(`first-color-options-${caseId}`);
+      const secondColorContainer = document.getElementById(`second-color-options-${caseId}`);
       const firstColor = document.querySelector(`input[name="first-color-${caseId}"]:checked`)?.value;
       const secondColor = document.querySelector(`input[name="second-color-${caseId}"]:checked`)?.value;
 
-      if (!firstColor || !secondColor) {
-        alert(`Please select both colors for Case ${caseNumber}.`);
+      if (!firstColor) {
+        errorElements.push(firstColorContainer);
         hasError = true;
-        return;
       }
+      if (!secondColor) {
+        errorElements.push(secondColorContainer);
+        hasError = true;
+      }
+      if (!firstColor || !secondColor) return;
 
       const firstLid = document.getElementById(`first-lid-${caseId}`)?.value.trim();
       const secondLid = document.getElementById(`second-lid-${caseId}`)?.value.trim();
@@ -384,28 +1022,23 @@ function generateAndCopyNotes() {
       const secondNoteLabel = isAMPM ? 'PM RIGHT LID' : 'LEFT & BOTTOM';
 
       notes += `${caseNumber}) ${pocket} ${size} / ${firstNoteLabel} / ${firstColor.toUpperCase()}`;
-      if (firstLid) {
-        notes += ` = LID = ${firstLid}`;
-      }
+      if (firstLid) notes += ` = LID = ${firstLid}`;
       notes += `\n`;
 
       notes += `${caseNumber}) ${pocket} ${size} / ${secondNoteLabel} / ${secondColor.toUpperCase()}`;
-      if (secondLid) {
-        notes += ` = LID = ${secondLid}`;
-      }
+      if (secondLid) notes += ` = LID = ${secondLid}`;
       notes += `\n`;
 
       if (dotw && dotw !== 'None') {
-        notes += `${caseNumber}) ${pocket} ${size} = DOTW = Modified *${dotw}*`;
-        if (customModifications) {
-          notes += ` (${customModifications})`;
-        }
+        notes += `${caseNumber}) ${pocket} ${size} = DOTW *${dotw}*`;
+        if (customModifications) notes += ` (${customModifications})`;
         notes += `\n`;
       }
     } else {
+      const colorContainer = document.getElementById(`color-options-${caseId}`);
       const color = document.querySelector(`input[name="color-${caseId}"]:checked`)?.value;
       if (!color) {
-        alert(`Please select a color for Case ${caseNumber}.`);
+        errorElements.push(colorContainer);
         hasError = true;
         return;
       }
@@ -414,16 +1047,22 @@ function generateAndCopyNotes() {
       const colorUpper = color.toUpperCase();
 
       notes += `${caseNumber}) ${pocket} ${size} / ${colorUpper}`;
-      if (lid) {
-        notes += ` = LID = ${lid}`;
-      }
+      if (lid) notes += ` = LID = ${lid}`;
       notes += `\n`;
 
-      // For Mission cases, output the selected Mission Engravings option.
       if (pocket === 'MISSION') {
-        const missionOption = document.querySelector(`#mission-engraving-options-${caseId} .selected`)?.getAttribute('data-option');
-        if (missionOption) {
+        const missionOption =
+          document.querySelector(`#mission-engraving-options-${caseId} .selected`)
+            ?.getAttribute('data-option');
+        if (missionOption && missionOption !== 'None') {
           notes += `${caseNumber}) ${pocket} ${size} / ${colorUpper} = POCKETS = ${missionOption}\n`;
+        }
+      } else if (pocket === 'NANO') {
+        const nanoPocketOption =
+          document.querySelector(`#nano-pocket-engraving-options-${caseId} .selected`)
+            ?.getAttribute('data-option');
+        if (nanoPocketOption && nanoPocketOption !== 'None') {
+          notes += `${caseNumber}) ${pocket} ${size} / ${colorUpper} = POCKETS = ${nanoPocketOption}\n`;
         }
       } else {
         const dotwSelectedButton = document.querySelector(`#dotw-options-${caseId} .selected`);
@@ -431,27 +1070,33 @@ function generateAndCopyNotes() {
         if (dotw && dotw !== 'None') {
           const customModifications = document.getElementById(`custom-modifications-${caseId}`)?.value.trim();
           notes += `${caseNumber}) ${pocket} ${size} / ${colorUpper} = DOTW = *${dotw}*`;
-          if (customModifications) {
-            notes += ` (${customModifications})`;
-          }
+          if (customModifications) notes += ` (${customModifications})`;
           notes += `\n`;
         }
       }
     }
   });
 
-  if (!hasError) {
-    if (notes === '') {
-      notes = 'No notes to display.';
+  if (hasError) {
+    errorElements.forEach(el => addValidationError(el));
+    if (errorElements.length > 0) {
+      errorElements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-    document.getElementById('notes-output').innerText = notes;
-    navigator.clipboard.writeText(notes).catch(err => {
-      console.error('Failed to copy notes to clipboard:', err);
-    });
+    return;
   }
+
+  if (notes === '') notes = 'No notes to display.';
+  document.getElementById('notes-output').innerText = notes;
+
+  navigator.clipboard.writeText(notes).catch(err => {
+    console.error('Failed to copy notes to clipboard:', err);
+  });
 }
 
-// --- Tab Switching Functionality ---
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+
 document.querySelectorAll('.tab-button').forEach(button => {
   button.addEventListener('click', () => {
     document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
@@ -466,25 +1111,38 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('engravings').style.display = 'block';
 });
 
-// --- SKU Lookup Functionality ---
+// ============================================================
+// SKU LOOKUP
+// ============================================================
+
 const skuData = {
   "cases": {
     "single": [
       { "name": "Nano Pill Case", "keyword": "SPC-NPC", "pockets": "nano", "size": "pill" },
       { "name": "Nano Vitamin Case", "keyword": "SPC-NVC", "pockets": "nano", "size": "vitamin" },
+      { "name": "MagNano Pill Case", "keyword": "SPC-MGN1P", "pockets": "magnano", "size": "pill" },
+      { "name": "MagNano AM-PM Pill Case", "keyword": "SPC-MGN2P", "pockets": "magnano", "size": "am/pm" },
       { "name": "Mission Pill Case", "keyword": "SPC-MPC", "pockets": "mission", "size": "pill" },
       { "name": "Mission Vitamin Case", "keyword": "SPC-MVC", "pockets": "mission", "size": "vitamin" },
+      { "name": "Weekly XS Case", "keyword": "SPC-WXSPC", "pockets": "weekly", "size": "xs" },
       { "name": "Weekly Pill Case", "keyword": "SPC-WPC", "pockets": "weekly", "size": "pill" },
       { "name": "Weekly Vitamin Case", "keyword": "SPC-WVC", "pockets": "weekly", "size": "vitamin" },
       { "name": "Weekly Vitamin XL Case", "keyword": "SPC-WVXC", "pockets": "weekly", "size": "vitamin xl" },
+      { "name": "Weekly Vitamin 2XL Case", "keyword": "SPC-WV2XC", "pockets": "weekly", "size": "vitamin 2xl" },
       { "name": "Weekly AM-PM Pill Case", "keyword": "BPC-WAPPC2", "pockets": "ampm", "size": "pill" },
       { "name": "Weekly AM-PM Vitamin Case", "keyword": "BPC-WAC2", "pockets": "ampm", "size": "vitamin" },
+      { "name": "Weekly AM-PM Vitamin XL Case", "keyword": "BPC-WAPVX2", "pockets": "ampm", "size": "vitamin xl" },
       { "name": "AM - Left Side (Vitamin)", "keyword": "SPC-WVALS", "pockets": "ampm", "size": "vitamin", "note": "Can be used for 2-Week Vitamin" },
       { "name": "PM - Right Side (Vitamin)", "keyword": "SPC-WVPRS", "pockets": "ampm", "size": "vitamin", "note": "Can be used for 2-Week Vitamin" },
       { "name": "AM Pill - Left Side", "keyword": "SPC-WVAPLS", "pockets": "ampm", "size": "pill", "note": "Can be used for 2-Week Pill" },
       { "name": "PM Pill - Right Side", "keyword": "SPC-WVPPRS", "pockets": "ampm", "size": "pill", "note": "Can be used for 2-Week Pill" },
+      { "name": "AM Vitamin XL - Left Side", "keyword": "SPC-HC-WVXALS", "pockets": "ampm", "size": "vitamin xl" },
+      { "name": "PM Vitamin XL - Right Side", "keyword": "SPC-HC-WVXPRS", "pockets": "ampm", "size": "vitamin xl" },
       { "name": "2-Week Pill Case", "keyword": "BPC-2WPC", "pockets": "2-week", "size": "pill" },
-      { "name": "2-Week Vitamin Case", "keyword": "BPC-2WVC", "pockets": "2-week", "size": "vitamin" }
+      { "name": "2-Week Vitamin Case", "keyword": "BPC-2WVC", "pockets": "2-week", "size": "vitamin" },
+      { "name": "2-Week Vitamin XL Case", "keyword": "BPC-2WVXLC2", "pockets": "2-week", "size": "vitamin xl" },
+      { "name": "2-Week Vitamin XL - Left Side", "keyword": "SPC-HC-VXL1TRC", "pockets": "2-week", "size": "vitamin xl" },
+      { "name": "2-Week Vitamin XL - Right Side", "keyword": "SPC-HC-VXL2BLC", "pockets": "2-week", "size": "vitamin xl" }
     ],
     "2_pack": [
       { "name": "Nano Pill Cases (2-Pack)", "keyword": "BPC-NPC2", "pockets": "nano", "size": "pill" },
@@ -796,14 +1454,10 @@ function handlePocketSelection(caseType, selectedPocket) {
   const skuOptionsDiv = document.getElementById('sku-options');
 
   const existingSizeContainer = skuOptionsDiv.querySelector('#size-container');
-  if (existingSizeContainer) {
-    existingSizeContainer.remove();
-  }
-  
+  if (existingSizeContainer) existingSizeContainer.remove();
+
   const existingSidesContainer = skuOptionsDiv.querySelector('#sides-container');
-  if (existingSidesContainer) {
-    existingSidesContainer.remove();
-  }
+  if (existingSidesContainer) existingSidesContainer.remove();
 
   document.getElementById('sku-output').value = '';
   const availableCases = skuCases.filter(c => c.pockets === selectedPocket);
@@ -830,9 +1484,7 @@ function handlePocketSelection(caseType, selectedPocket) {
         generateSidesOptions(skuOptionsDiv, selectedPocket, caseType);
       } else {
         const existingSidesContainer = skuOptionsDiv.querySelector('#sides-container');
-        if (existingSidesContainer) {
-          existingSidesContainer.remove();
-        }
+        if (existingSidesContainer) existingSidesContainer.remove();
         updateSKU(caseType, selectedPocket, size);
       }
     });
@@ -846,9 +1498,7 @@ function handlePocketSelection(caseType, selectedPocket) {
 
 function generateSidesOptions(skuOptionsDiv, selectedPocket, caseType) {
   const existingSidesContainer = skuOptionsDiv.querySelector('#sides-container');
-  if (existingSidesContainer) {
-    existingSidesContainer.remove();
-  }
+  if (existingSidesContainer) existingSidesContainer.remove();
 
   const sidesContainer = document.createElement('div');
   sidesContainer.id = 'sides-container';
@@ -897,12 +1547,22 @@ function updateSKU(caseType, selectedPocket, selectedSize) {
         (!c.name.toLowerCase().includes('left side') && !c.name.toLowerCase().includes('right side'))
       );
     } else {
+      // Prefer a side SKU that natively belongs to the selected pocket.
+      // This is what makes the dedicated 2-Week Vitamin XL side SKUs resolve correctly.
       matchingCase = skuCases.find(c =>
-        c.pockets === 'ampm' &&
+        c.pockets === selectedPocket &&
         c.size === selectedSize &&
-        c.name.toLowerCase().includes(selectedSide) &&
-        (selectedPocket === 'ampm' || (c.note && c.note.includes('Can be used for 2-Week')))
+        c.name.toLowerCase().includes(selectedSide)
       );
+      // Fallback: 2-Week sides that historically reuse an AMPM SKU (Pill, Vitamin).
+      if (!matchingCase && selectedPocket === '2-week') {
+        matchingCase = skuCases.find(c =>
+          c.pockets === 'ampm' &&
+          c.size === selectedSize &&
+          c.name.toLowerCase().includes(selectedSide) &&
+          c.note && c.note.includes('Can be used for 2-Week')
+        );
+      }
     }
   } else {
     matchingCase = skuCases.find(c => c.pockets === selectedPocket && c.size === selectedSize);
@@ -912,30 +1572,6 @@ function updateSKU(caseType, selectedPocket, selectedSize) {
     document.getElementById('sku-output').value = matchingCase.keyword;
   } else {
     document.getElementById('sku-output').value = 'No matching SKU found';
-  }
-}
-
-function checkComboSKU() {
-  const skuOutput = document.getElementById('sku-output');
-  skuOutput.value = '';
-  const case1Pocket = document.querySelector('#combo-case1-pocket-options .selected')?.dataset.pocket;
-  const case1Size = document.querySelector('#combo-case1-size-options .selected')?.dataset.size;
-  const case2Pocket = document.querySelector('#combo-case2-pocket-options .selected')?.dataset.pocket;
-  const case2Size = document.querySelector('#combo-case2-size-options .selected')?.dataset.size;
-  if (case1Pocket && case1Size && case2Pocket && case2Size) {
-    const comboPacks = skuData.cases['combo_pack'];
-    const matchingCombo = comboPacks.find(combo => {
-      const matchCase1 = combo.case1.pockets === case1Pocket && combo.case1.size === case1Size;
-      const matchCase2 = combo.case2.pockets === case2Pocket && combo.case2.size === case2Size;
-      const matchCase1Reverse = combo.case1.pockets === case2Pocket && combo.case1.size === case2Size;
-      const matchCase2Reverse = combo.case2.pockets === case1Pocket && combo.case2.size === case1Size;
-      return (matchCase1 && matchCase2) || (matchCase1Reverse && matchCase2Reverse);
-    });
-    if (matchingCombo) {
-      skuOutput.value = matchingCombo.keyword;
-    } else {
-      skuOutput.value = 'No matching SKU found';
-    }
   }
 }
 

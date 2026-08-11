@@ -6,13 +6,15 @@
     <title>Ikigai Pastes</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body> 
+<body>
+    <h5>🌸 Ｉｋｉｇａｉ　Ｐａｓｔｅｓ 🌸</h5>
+
     <!-- Tabs Navigation -->
     <div class="tabs">
       <button class="tab-button active" data-tab="engravings">Engravings</button>
       <button class="tab-button" data-tab="sku-lookup">SKU Lookup</button>
     </div>
-    
+
     <!-- Engravings Tab Content -->
     <div class="tab-content" id="engravings" style="display: block;">
       <div id="case-list"></div>
@@ -22,17 +24,17 @@
       <button class="emoji-button" onclick="generateAndCopyNotes()" title="Generate and Copy NOTES">📋</button>
       <pre id="notes-output"></pre>
     </div>
-    
+
     <!-- SKU Lookup Tab Content -->
     <div class="tab-content" id="sku-lookup" style="display: none;">
       <div id="sku-lookup-interface">
         <!-- Case Type Selection -->
         <label><strong>Case Type:</strong></label>
         <div id="sku-case-type-options" class="option-buttons"></div>
-    
+
         <!-- Dynamic Options -->
         <div id="sku-options"></div>
-    
+
         <!-- SKU Display -->
         <div id="sku-display">
           <label for="sku-output"><strong>SKU:</strong></label>
