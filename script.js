@@ -109,7 +109,7 @@ function addCase() {
   caseDiv.insertBefore(removeButton, caseDiv.firstChild);
 
   const pocketOptionsDiv = caseDiv.querySelector(`#pocket-options-${caseId}`);
-  const pockets = ['NANO', 'MISSION', 'WEEKLY', 'AMPM', '2-WEEK', 'MAG'];
+  const pockets = ['NANO', 'MISSION', 'WEEKLY', 'AMPM', '2-WEEK', 'MAG', 'MAG WEEKLY'];
   pockets.forEach(pocket => {
     const button = document.createElement('button');
     button.type = 'button';
@@ -160,6 +160,8 @@ function generateSizeButtons(caseId, sizes) {
 function updateSizeOptions(caseId, pocket) {
   if (pocket === 'MAG') {
     generateSizeButtons(caseId, ['PILL', 'VITAMIN', 'VITAMIN XL', 'AM/PM']);
+  } else if (pocket === 'MAG WEEKLY') {
+    generateSizeButtons(caseId, ['PILL', 'VITAMIN', 'VITAMIN XL']);
   } else {
     generateSizeButtons(caseId, ['XS', 'PILL', 'VITAMIN', 'VITAMIN XL', 'VITAMIN 2XL']);
   }
@@ -174,6 +176,7 @@ function removeCase(caseId) {
   delete magEntries[caseId];
   delete magEntryCounters[caseId];
   delete magModes[caseId];
+  delete magWeeklyCounts[caseId];
   updateCaseHeadings();
 }
 
@@ -213,6 +216,21 @@ function updateCaseType(caseId) {
       <button class="emoji-button mag-add-button" id="mag-add-btn-${caseId}" onclick="addMagEntry('${caseId}')" title="Add Mag Entry">➕</button>
     `;
     initMagSet(caseId, 7);
+
+  } else if (pocket === 'MAG WEEKLY') {
+    colorsDiv.innerHTML = `
+      <label><strong>Case Count:</strong></label>
+      <div id="mw-count-options-${caseId}" class="option-buttons"></div>
+      <div id="mw-colors-${caseId}"></div>
+    `;
+    engravingsDiv.innerHTML = `
+      <div id="mw-lids-${caseId}"></div>
+      <div id="mw-pocket-${caseId}"></div>
+      ${generateDOTWSelection(caseId)}
+    `;
+    setupDOTWSelection(caseId);
+    generateMagWeeklyCountButtons(caseId);
+    setMagWeeklyCount(caseId, magWeeklyCounts[caseId] || 1);
 
   } else if (pocket === 'AMPM' || pocket === '2-WEEK') {
     const firstLabel = pocket === 'AMPM' ? 'AM Color' : 'RIGHT & TOP Color';
@@ -594,6 +612,187 @@ function updateMagSummary(caseId, entryId) {
 }
 
 // ============================================================
+// MAG WEEKLY (MAGNETIC WEEKLY CASES)
+// ============================================================
+
+const magWeeklyCounts = {};
+
+const MAG_WEEKLY_PIECES = {
+  1: ['Middle'],
+  2: ['Left', 'Right'],
+  3: ['Left', 'Middle', 'Right'],
+  4: ['Left', 'Middle 1', 'Middle 2', 'Right']
+};
+
+const MAG_WEEKLY_POCKET_OPTIONS = {
+  1: {
+    daily: ['AM', 'PM', 'Noon', 'Eve'],
+    weekly: ['Week 1', 'Week 2', 'Week 3', 'Week 4']
+  },
+  2: {
+    daily: ['AM + PM'],
+    weekly: ['Week 1 + Week 2']
+  },
+  3: {
+    daily: ['Morn + Noon + Night'],
+    weekly: ['Week 1 + Week 2 + Week 3']
+  },
+  4: {
+    daily: ['Morn + Noon + Eve + Bed'],
+    weekly: ['Week 1 + Week 2 + Week 3 + Week 4']
+  }
+};
+
+function magWeeklyPieces(caseId) {
+  return MAG_WEEKLY_PIECES[magWeeklyCounts[caseId] || 1];
+}
+
+function generateMagWeeklyCountButtons(caseId) {
+  const countDiv = document.getElementById(`mw-count-options-${caseId}`);
+  if (!countDiv) return;
+  countDiv.innerHTML = '';
+
+  [1, 2, 3, 4].forEach(count => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.innerText = String(count);
+    button.dataset.count = count;
+    button.onclick = () => setMagWeeklyCount(caseId, count);
+    countDiv.appendChild(button);
+  });
+}
+
+function setMagWeeklyCount(caseId, count) {
+  const previousCount = magWeeklyCounts[caseId] || 0;
+
+  // Preserve what the user already picked so changing the count is not destructive
+  const keptColors = [];
+  const keptLids = [];
+  for (let i = 0; i < previousCount; i++) {
+    keptColors.push(document.querySelector(`input[name="mw-color-${caseId}-${i}"]:checked`)?.value || '');
+    keptLids.push(document.getElementById(`mw-lid-${caseId}-${i}`)?.value || '');
+  }
+
+  magWeeklyCounts[caseId] = count;
+
+  document.querySelectorAll(`#mw-count-options-${caseId} button`).forEach(btn => {
+    btn.classList.toggle('selected', Number(btn.dataset.count) === count);
+  });
+
+  renderMagWeeklyColors(caseId);
+  renderMagWeeklyLids(caseId);
+  renderMagWeeklyPocketEngraving(caseId);
+
+  for (let i = 0; i < count; i++) {
+    if (keptColors[i]) selectMagWeeklyColor(caseId, i, keptColors[i]);
+    const lidInput = document.getElementById(`mw-lid-${caseId}-${i}`);
+    if (lidInput && keptLids[i]) lidInput.value = keptLids[i];
+  }
+}
+
+function renderMagWeeklyColors(caseId) {
+  const colorsDiv = document.getElementById(`mw-colors-${caseId}`);
+  if (!colorsDiv) return;
+  const pieces = magWeeklyPieces(caseId);
+
+  colorsDiv.innerHTML = pieces.map((piece, i) => `
+    <label><strong>${pieces.length === 1 ? 'Color' : `${piece} Color`}:</strong></label>
+    <div id="mw-color-options-${caseId}-${i}" class="color-swatches"></div>
+  `).join('');
+
+  pieces.forEach((piece, i) => {
+    const containerId = `mw-color-options-${caseId}-${i}`;
+    generateColorSwatches(containerId, `mw-color-${caseId}-${i}`);
+
+    const container = document.getElementById(containerId);
+    watchForSelection(container);
+
+    // First piece auto-fills the rest, but only while none of them are set yet
+    container.addEventListener('change', (e) => {
+      checkSkippedFields(caseId);
+      if (i === 0 && pieces.length > 1 && !magWeeklyColorsHaveSelections(caseId)) {
+        autoFillMagWeeklyColor(caseId, e.target.value);
+      }
+    });
+  });
+}
+
+function magWeeklyColorsHaveSelections(caseId) {
+  const pieces = magWeeklyPieces(caseId);
+  for (let i = 1; i < pieces.length; i++) {
+    if (document.querySelector(`input[name="mw-color-${caseId}-${i}"]:checked`)) return true;
+  }
+  return false;
+}
+
+function selectMagWeeklyColor(caseId, index, colorName) {
+  const container = document.getElementById(`mw-color-options-${caseId}-${index}`);
+  if (!container) return;
+  const radio = container.querySelector(`input[value="${colorName}"]`);
+  if (!radio) return;
+  radio.checked = true;
+  container.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+  radio.closest('.color-swatch').classList.add('selected');
+  clearValidationError(container);
+}
+
+function autoFillMagWeeklyColor(caseId, colorName) {
+  const pieces = magWeeklyPieces(caseId);
+  for (let i = 1; i < pieces.length; i++) {
+    selectMagWeeklyColor(caseId, i, colorName);
+  }
+}
+
+function renderMagWeeklyLids(caseId) {
+  const lidsDiv = document.getElementById(`mw-lids-${caseId}`);
+  if (!lidsDiv) return;
+  const pieces = magWeeklyPieces(caseId);
+
+  lidsDiv.innerHTML = pieces.map((piece, i) => `
+    <label>${piece} Lid Engraving:
+      <input type="text" id="mw-lid-${caseId}-${i}" placeholder="Optional">
+    </label>
+  `).join('');
+}
+
+function renderMagWeeklyPocketEngraving(caseId) {
+  const pocketDiv = document.getElementById(`mw-pocket-${caseId}`);
+  if (!pocketDiv) return;
+  const options = MAG_WEEKLY_POCKET_OPTIONS[magWeeklyCounts[caseId] || 1];
+
+  const row = (label, id, values) => `
+    <label>${label}:</label>
+    <div id="${id}" class="option-buttons mag-day-buttons">
+      ${values.map(v => `<button type="button" data-option="${v}">${v}</button>`).join('')}
+    </div>
+  `;
+
+  pocketDiv.innerHTML = `
+    <label><strong>Pocket Engraving:</strong></label>
+    ${row('Daily', `mw-pocket-daily-${caseId}`, options.daily)}
+    ${row('Weekly', `mw-pocket-weekly-${caseId}`, options.weekly)}
+    <div id="mw-pocket-none-${caseId}" class="option-buttons mag-day-buttons">
+      <button type="button" data-option="None" class="selected">None</button>
+    </div>
+  `;
+
+  // Daily, Weekly and None are one mutually exclusive choice
+  pocketDiv.querySelectorAll('button').forEach(button => {
+    button.addEventListener('click', () => {
+      pocketDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+      button.classList.add('selected');
+      checkSkippedFields(caseId);
+    });
+  });
+}
+
+function magWeeklyPocketTokens(caseId) {
+  const selected = document.querySelector(`#mw-pocket-${caseId} .selected`)?.dataset.option;
+  if (!selected || selected === 'None') return [];
+  return selected.split(' + ');
+}
+
+// ============================================================
 // DOTW SELECTION
 // ============================================================
 
@@ -944,6 +1143,7 @@ function generateAndCopyNotes() {
     const isAMPM = pocket === 'AMPM';
     const isTwoWeek = pocket === '2-WEEK';
     const isMAG = pocket === 'MAG';
+    const isMagWeekly = pocket === 'MAG WEEKLY';
 
     if (isMAG) {
       const entries = magEntries[caseId] || [];
@@ -994,6 +1194,38 @@ function generateAndCopyNotes() {
         if (pocketText) notes += ` = POCKET = ${pocketText}`;
         notes += `\n`;
       });
+
+    } else if (isMagWeekly) {
+      const pieces = magWeeklyPieces(caseId);
+      const tokens = magWeeklyPocketTokens(caseId);
+
+      const colors = pieces.map((piece, i) => {
+        const color = document.querySelector(`input[name="mw-color-${caseId}-${i}"]:checked`)?.value;
+        if (!color) {
+          errorElements.push(document.getElementById(`mw-color-options-${caseId}-${i}`));
+          hasError = true;
+        }
+        return color;
+      });
+
+      if (colors.some(color => !color)) return;
+
+      pieces.forEach((piece, i) => {
+        const lid = document.getElementById(`mw-lid-${caseId}-${i}`)?.value.trim();
+        notes += `${caseNumber}) ${pocket} ${size} / ${piece.toUpperCase()} / ${colors[i].toUpperCase()}`;
+        if (lid) notes += ` = LID = ${lid}`;
+        if (tokens[i]) notes += ` = POCKET = ${tokens[i].toUpperCase()}`;
+        notes += `\n`;
+      });
+
+      const dotwSelectedButton = document.querySelector(`#dotw-options-${caseId} .selected`);
+      const dotw = dotwSelectedButton ? dotwSelectedButton.getAttribute('data-day') : 'None';
+      if (dotw && dotw !== 'None') {
+        const customModifications = document.getElementById(`custom-modifications-${caseId}`)?.value.trim();
+        notes += `${caseNumber}) ${pocket} ${size} = DOTW = *${dotw}*`;
+        if (customModifications) notes += ` (${customModifications})`;
+        notes += `\n`;
+      }
 
     } else if (isAMPM || isTwoWeek) {
       const firstColorContainer = document.getElementById(`first-color-options-${caseId}`);
