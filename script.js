@@ -760,47 +760,52 @@ function renderMagWeeklyPocketEngraving(caseId) {
   if (!pocketDiv) return;
   const options = MAG_WEEKLY_POCKET_OPTIONS[magWeeklyCounts[caseId] || 1];
 
-  const row = (label, id, values) => `
+  const row = (label, id, values, extra = '') => `
     <label>${label}:</label>
     <div id="${id}" class="option-buttons mag-day-buttons">
       ${values.map(v => `<button type="button" data-option="${v}">${v}</button>`).join('')}
+      ${extra}
     </div>
   `;
 
   pocketDiv.innerHTML = `
     <label><strong>Pocket Engraving:</strong></label>
-    ${row('Daily', `mw-pocket-daily-${caseId}`, options.daily)}
+    ${row('Daily', `mw-pocket-daily-${caseId}`, options.daily,
+      `<button type="button" data-option="None" class="selected">None</button>`)}
     ${row('Weekly', `mw-pocket-weekly-${caseId}`, options.weekly)}
-    <div id="mw-pocket-choice-${caseId}" class="option-buttons mag-day-buttons">
-      <button type="button" data-option="Custom">Custom</button>
-      <button type="button" data-option="None" class="selected">None</button>
-    </div>
+    <label>Custom:</label>
     <input type="text" id="mw-pocket-custom-${caseId}" class="mag-custom-input"
-           placeholder="e.g. Breakfast + Lunch + Dinner" style="display:none;">
+           style="width: 360px; max-width: 100%;"
+           placeholder="Type here, e.g. Breakfast + Lunch + Dinner">
   `;
 
-  // Daily, Weekly, Custom and None are one mutually exclusive choice
+  const customInput = document.getElementById(`mw-pocket-custom-${caseId}`);
+
+  // A preset and custom text are mutually exclusive: picking a preset drops the text
   pocketDiv.querySelectorAll('button').forEach(button => {
     button.addEventListener('click', () => {
       pocketDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
       button.classList.add('selected');
-
-      const customInput = document.getElementById(`mw-pocket-custom-${caseId}`);
-      customInput.style.display = button.dataset.option === 'Custom' ? 'block' : 'none';
-      if (button.dataset.option === 'Custom') customInput.focus();
-
+      customInput.value = '';
       checkSkippedFields(caseId);
+    });
+  });
+
+  // Typing is what selects custom; clearing the box falls back to None
+  customInput.addEventListener('input', () => {
+    const hasText = customInput.value.trim() !== '';
+    pocketDiv.querySelectorAll('button').forEach(btn => {
+      btn.classList.toggle('selected', !hasText && btn.dataset.option === 'None');
     });
   });
 }
 
 function magWeeklyPocketTokens(caseId) {
+  const custom = document.getElementById(`mw-pocket-custom-${caseId}`)?.value.trim() || '';
   const selected = document.querySelector(`#mw-pocket-${caseId} .selected`)?.dataset.option;
-  if (!selected || selected === 'None') return [];
 
-  const raw = selected === 'Custom'
-    ? (document.getElementById(`mw-pocket-custom-${caseId}`)?.value.trim() || '')
-    : selected;
+  // Custom text wins; typing already cleared any preset selection
+  const raw = custom || (selected && selected !== 'None' ? selected : '');
   if (!raw) return [];
 
   const tokens = raw.split('+').map(token => token.trim()).filter(Boolean);
