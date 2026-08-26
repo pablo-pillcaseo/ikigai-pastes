@@ -1029,6 +1029,8 @@ function getColors() {
   return [
     { name: 'Matte Black', code: '#000000' },
     { name: 'Aluminum', code: '#E0DFCB' },
+    { name: 'Titanium', code: '#8A8B87' },
+    { name: 'Stainless Steel', code: '#C0C5C9' },
     { name: 'Navy Blue', code: '#4883E8' },
     { name: 'Forest Green', code: '#899D7A' },
     { name: 'Designer Red', code: '#EB5047' },
