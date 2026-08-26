@@ -60,6 +60,12 @@ function checkSkippedFields(caseId) {
     flashValidation(sizeDiv);
     skipped.push(sizeDiv);
   }
+
+  const countDiv = document.getElementById(`magnano-count-options-${caseId}`);
+  if (pocket === 'MAGNANO' && size && countDiv && !magPocketCounts[caseId]) {
+    flashValidation(countDiv);
+    skipped.push(countDiv);
+  }
   return skipped;
 }
 
@@ -109,7 +115,7 @@ function addCase() {
   caseDiv.insertBefore(removeButton, caseDiv.firstChild);
 
   const pocketOptionsDiv = caseDiv.querySelector(`#pocket-options-${caseId}`);
-  const pockets = ['NANO', 'MISSION', 'WEEKLY', 'AMPM', '2-WEEK', 'MAG', 'MAG WEEKLY'];
+  const pockets = ['NANO', 'MISSION', 'WEEKLY', 'AMPM', '2-WEEK', 'MAGNANO', 'MAG WEEKLY'];
   pockets.forEach(pocket => {
     const button = document.createElement('button');
     button.type = 'button';
@@ -146,10 +152,10 @@ function generateSizeButtons(caseId, sizes) {
       sizeOptionsDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
       button.classList.add('selected');
       clearValidationError(sizeOptionsDiv);
-      // If this is a MAG case, the AM/PM pocket-engraving option depends on size
+      // MAGNANO pocket counts depend on size (PILL goes up to 5P, others 1P/2P)
       const pocket = document.querySelector(`#pocket-options-${caseId} .selected`)?.innerText;
-      if (pocket === 'MAG') {
-        refreshMagPocketModifier(caseId);
+      if (pocket === 'MAGNANO') {
+        renderMagNanoCount(caseId);
       }
     };
     sizeOptionsDiv.appendChild(button);
@@ -158,9 +164,7 @@ function generateSizeButtons(caseId, sizes) {
 }
 
 function updateSizeOptions(caseId, pocket) {
-  if (pocket === 'MAG') {
-    generateSizeButtons(caseId, ['PILL', 'VITAMIN', 'VITAMIN XL', 'AM/PM']);
-  } else if (pocket === 'MAG WEEKLY') {
+  if (pocket === 'MAGNANO' || pocket === 'MAG WEEKLY') {
     generateSizeButtons(caseId, ['PILL', 'VITAMIN', 'VITAMIN XL']);
   } else {
     generateSizeButtons(caseId, ['XS', 'PILL', 'VITAMIN', 'VITAMIN XL', 'VITAMIN 2XL']);
@@ -176,6 +180,7 @@ function removeCase(caseId) {
   delete magEntries[caseId];
   delete magEntryCounters[caseId];
   delete magModes[caseId];
+  delete magPocketCounts[caseId];
   delete magWeeklyCounts[caseId];
   updateCaseHeadings();
 }
@@ -202,8 +207,13 @@ function updateCaseType(caseId) {
 
   if (!pocket) return;
 
-  if (pocket === 'MAG') {
-    colorsDiv.innerHTML = '';
+  if (pocket === 'MAGNANO') {
+    colorsDiv.innerHTML = `
+      <div id="magnano-count-${caseId}" class="magnano-count" style="display:none;">
+        <label><strong>Pockets:</strong></label>
+        <div id="magnano-count-options-${caseId}" class="option-buttons"></div>
+      </div>
+    `;
     engravingsDiv.innerHTML = `
       <div class="mag-mode-toggle">
         <label><strong>Mode:</strong></label>
@@ -216,6 +226,7 @@ function updateCaseType(caseId) {
       <button class="emoji-button mag-add-button" id="mag-add-btn-${caseId}" onclick="addMagEntry('${caseId}')" title="Add Mag Entry">➕</button>
     `;
     initMagSet(caseId, 7);
+    renderMagNanoCount(caseId);
 
   } else if (pocket === 'MAG WEEKLY') {
     colorsDiv.innerHTML = `
@@ -298,6 +309,56 @@ function updateCaseType(caseId) {
 const magEntries = {};
 const magEntryCounters = {};
 const magModes = {};
+const magPocketCounts = {};
+
+// PILL bodies go up to five pockets; the larger sizes are 1P or 2P only.
+function magNanoCountOptions(size) {
+  return size === 'PILL' ? ['1P', '2P', '3P', '4P', '5P'] : ['1P', '2P'];
+}
+
+function isMagNanoTwoPocket(caseId) {
+  return magPocketCounts[caseId] === '2P';
+}
+
+function renderMagNanoCount(caseId) {
+  const wrapper = document.getElementById(`magnano-count-${caseId}`);
+  const container = document.getElementById(`magnano-count-options-${caseId}`);
+  if (!wrapper || !container) return;
+
+  const size = document.querySelector(`#size-options-${caseId} .selected`)?.innerText;
+  container.innerHTML = '';
+
+  if (!size) {
+    wrapper.style.display = 'none';
+    magPocketCounts[caseId] = null;
+    refreshMagPocketModifier(caseId);
+    return;
+  }
+
+  wrapper.style.display = '';
+  const options = magNanoCountOptions(size);
+  // A count carried over from a bigger size (e.g. 4P then switch to VITAMIN) no longer applies.
+  if (!options.includes(magPocketCounts[caseId])) magPocketCounts[caseId] = null;
+
+  options.forEach(option => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.innerText = option;
+    button.dataset.count = option;
+    if (option === magPocketCounts[caseId]) button.classList.add('selected');
+    button.onclick = () => {
+      container.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+      button.classList.add('selected');
+      magPocketCounts[caseId] = option;
+      clearValidationError(container);
+      refreshMagPocketModifier(caseId);
+    };
+    container.appendChild(button);
+  });
+
+  watchForSelection(container);
+  refreshMagPocketModifier(caseId);
+}
 
 function initMagSet(caseId, count) {
   magEntries[caseId] = [];
@@ -438,8 +499,8 @@ function renderMagPocketModifier(caseId, entryId) {
   if (!modifierDiv) return;
   modifierDiv.innerHTML = '';
 
-  const caseSize = document.querySelector(`#size-options-${caseId} .selected`)?.innerText;
-  if (caseSize !== 'AM/PM') return; // only meaningful when MAG case is sized AM/PM
+  // AM/PM is not a case type: it is an optional pocket engraving on a 2P MAGNANO.
+  if (!isMagNanoTwoPocket(caseId)) return;
 
   const toggle = document.createElement('button');
   toggle.type = 'button';
@@ -1169,10 +1230,17 @@ function generateAndCopyNotes() {
 
     const isAMPM = pocket === 'AMPM';
     const isTwoWeek = pocket === '2-WEEK';
-    const isMAG = pocket === 'MAG';
+    const isMagNano = pocket === 'MAGNANO';
     const isMagWeekly = pocket === 'MAG WEEKLY';
 
-    if (isMAG) {
+    if (isMagNano) {
+      const pocketCount = magPocketCounts[caseId];
+      if (!pocketCount) {
+        errorElements.push(document.getElementById(`magnano-count-options-${caseId}`));
+        hasError = true;
+        return;
+      }
+
       const entries = magEntries[caseId] || [];
       const total = entries.length;
       const isSingleMode = magModes[caseId] === 'single';
@@ -1213,9 +1281,9 @@ function generateAndCopyNotes() {
         }
 
         if (isSingleMode) {
-          notes += `${caseNumber}) MAG ${size} / ${color.toUpperCase()}`;
+          notes += `${caseNumber}) MAGNANO ${size} ${pocketCount} / ${color.toUpperCase()}`;
         } else {
-          notes += `${caseNumber}) MAG ${size} [${entryIdx + 1}/${total}] / ${color.toUpperCase()}`;
+          notes += `${caseNumber}) MAGNANO ${size} ${pocketCount} [${entryIdx + 1}/${total}] / ${color.toUpperCase()}`;
         }
         if (lidText) notes += ` = LID = ${lidText}`;
         if (pocketText) notes += ` = POCKET = ${pocketText}`;
@@ -1379,8 +1447,9 @@ const skuData = {
     "single": [
       { "name": "Nano Pill Case", "keyword": "SPC-NPC", "pockets": "nano", "size": "pill" },
       { "name": "Nano Vitamin Case", "keyword": "SPC-NVC", "pockets": "nano", "size": "vitamin" },
-      { "name": "MagNano Pill Case", "keyword": "SPC-MGN1P", "pockets": "magnano", "size": "pill" },
-      { "name": "MagNano AM-PM Pill Case", "keyword": "SPC-MGN2P", "pockets": "magnano", "size": "am/pm" },
+      { "name": "MagNano Pill Case (1P)", "keyword": "SPC-MGN1P", "pockets": "magnano", "size": "pill", "count": "1P" },
+      { "name": "MagNano Pill Case (2P)", "keyword": "SPC-MGN2P", "pockets": "magnano", "size": "pill", "count": "2P" },
+      { "name": "MagNano Vitamin Case (2P)", "keyword": "SPC-MGN2V", "pockets": "magnano", "size": "vitamin", "count": "2P" },
       { "name": "Mission Pill Case", "keyword": "SPC-MPC", "pockets": "mission", "size": "pill" },
       { "name": "Mission Vitamin Case", "keyword": "SPC-MVC", "pockets": "mission", "size": "vitamin" },
       { "name": "Weekly XS Case", "keyword": "SPC-WXSPC", "pockets": "weekly", "size": "xs" },
@@ -1718,6 +1787,9 @@ function handlePocketSelection(caseType, selectedPocket) {
   const existingSidesContainer = skuOptionsDiv.querySelector('#sides-container');
   if (existingSidesContainer) existingSidesContainer.remove();
 
+  const existingCountContainer = skuOptionsDiv.querySelector('#count-container');
+  if (existingCountContainer) existingCountContainer.remove();
+
   document.getElementById('sku-output').value = '';
   const availableCases = skuCases.filter(c => c.pockets === selectedPocket);
   let sizes = [...new Set(availableCases.map(c => c.size))];
@@ -1741,9 +1813,13 @@ function handlePocketSelection(caseType, selectedPocket) {
       button.classList.add('selected');
       if (selectedPocket === 'ampm' || selectedPocket === '2-week') {
         generateSidesOptions(skuOptionsDiv, selectedPocket, caseType);
+      } else if (selectedPocket === 'magnano') {
+        generateCountOptions(skuOptionsDiv, selectedPocket, caseType, size);
       } else {
         const existingSidesContainer = skuOptionsDiv.querySelector('#sides-container');
         if (existingSidesContainer) existingSidesContainer.remove();
+        const existingCountContainer = skuOptionsDiv.querySelector('#count-container');
+        if (existingCountContainer) existingCountContainer.remove();
         updateSKU(caseType, selectedPocket, size);
       }
     });
@@ -1753,6 +1829,45 @@ function handlePocketSelection(caseType, selectedPocket) {
   sizeContainer.appendChild(sizeLabel);
   sizeContainer.appendChild(sizeOptionsDiv);
   skuOptionsDiv.appendChild(sizeContainer);
+}
+
+// Counts are derived from the SKU table, so only combinations that have a real
+// keyword are offered (e.g. VITAMIN currently exists as 2P only).
+function generateCountOptions(skuOptionsDiv, selectedPocket, caseType, selectedSize) {
+  const existingCountContainer = skuOptionsDiv.querySelector('#count-container');
+  if (existingCountContainer) existingCountContainer.remove();
+
+  const skuCases = skuData.cases[caseType];
+  const counts = [...new Set(skuCases
+    .filter(c => c.pockets === selectedPocket && c.size === selectedSize && c.count)
+    .map(c => c.count))];
+
+  const countContainer = document.createElement('div');
+  countContainer.id = 'count-container';
+  const countLabel = document.createElement('label');
+  countLabel.innerHTML = '<strong>Pockets:</strong>';
+  const countOptionsDiv = document.createElement('div');
+  countOptionsDiv.className = 'option-buttons';
+
+  counts.forEach(count => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.innerText = count;
+    button.dataset.count = count;
+    button.addEventListener('click', () => {
+      countOptionsDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+      button.classList.add('selected');
+      updateSKU(caseType, selectedPocket, selectedSize);
+    });
+    countOptionsDiv.appendChild(button);
+  });
+
+  countContainer.appendChild(countLabel);
+  countContainer.appendChild(countOptionsDiv);
+  skuOptionsDiv.appendChild(countContainer);
+
+  if (counts.length === 1) countOptionsDiv.querySelector('button').classList.add('selected');
+  updateSKU(caseType, selectedPocket, selectedSize);
 }
 
 function generateSidesOptions(skuOptionsDiv, selectedPocket, caseType) {
@@ -1823,6 +1938,15 @@ function updateSKU(caseType, selectedPocket, selectedSize) {
         );
       }
     }
+  } else if (selectedPocket === 'magnano') {
+    const selectedCount = document.querySelector('#count-container .option-buttons button.selected')?.dataset.count;
+    if (!selectedCount) {
+      document.getElementById('sku-output').value = '';
+      return;
+    }
+    matchingCase = skuCases.find(c =>
+      c.pockets === selectedPocket && c.size === selectedSize && c.count === selectedCount
+    );
   } else {
     matchingCase = skuCases.find(c => c.pockets === selectedPocket && c.size === selectedSize);
   }
