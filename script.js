@@ -1447,9 +1447,10 @@ const skuData = {
     "single": [
       { "name": "Nano Pill Case", "keyword": "SPC-NPC", "pockets": "nano", "size": "pill" },
       { "name": "Nano Vitamin Case", "keyword": "SPC-NVC", "pockets": "nano", "size": "vitamin" },
-      { "name": "MagNano Pill Case (1P)", "keyword": "SPC-MGN1P", "pockets": "magnano", "size": "pill", "count": "1P" },
-      { "name": "MagNano Pill Case (2P)", "keyword": "SPC-MGN2P", "pockets": "magnano", "size": "pill", "count": "2P" },
-      { "name": "MagNano Vitamin Case (2P)", "keyword": "SPC-MGN2V", "pockets": "magnano", "size": "vitamin", "count": "2P" },
+      { "name": "MagNano 1P Pill Case", "keyword": "SPC-MGN1P", "pockets": "magnano", "size": "pill", "count": "1P" },
+      { "name": "MagNano 2P Pill Case", "keyword": "SPC-MGN2P", "pockets": "magnano", "size": "pill", "count": "2P" },
+      { "name": "MagNano 1P Vitamin Case", "keyword": "SPC-MGN1V", "pockets": "magnano", "size": "vitamin", "count": "1P" },
+      { "name": "MagNano 2P Vitamin Case", "keyword": "SPC-MGN2V", "pockets": "magnano", "size": "vitamin", "count": "2P" },
       { "name": "Mission Pill Case", "keyword": "SPC-MPC", "pockets": "mission", "size": "pill" },
       { "name": "Mission Vitamin Case", "keyword": "SPC-MVC", "pockets": "mission", "size": "vitamin" },
       { "name": "Weekly XS Case", "keyword": "SPC-WXSPC", "pockets": "weekly", "size": "xs" },
