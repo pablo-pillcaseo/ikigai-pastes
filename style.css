@@ -110,6 +110,25 @@
   }
 }
 
+/* --- App Header --- */
+.app-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.app-header h5 {
+  margin: 0;
+}
+
+#copy-shipping-button {
+  margin-top: 0;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
 /* --- Reset and General Styles --- */
 body {
   font-family: Arial, sans-serif;
