@@ -1985,3 +1985,140 @@ function copyShippingPhrase() {
     console.error('Could not copy shipping phrase: ', err);
   });
 }
+
+// ============================================================
+// COPY CS NOTES
+// ============================================================
+
+// Predefined account -> initials mapping. Initials are never derived from a name.
+const CS_TEAM = [
+  { id: 'alyanna', name: 'Alyanna Zenarosa', initials: 'AZ' },
+  { id: 'chris',   name: 'Chris',            initials: 'CA' },
+  { id: 'jen',     name: 'Jen',              initials: 'JC' },
+  { id: 'sprite',  name: 'Sprite',           initials: 'SM' },
+  { id: 'josh',    name: 'Josh',             initials: 'JM' },
+];
+
+const CS_NOTE_TEMPLATES = {
+  exchange:         'Exchange from [Original] to [New item]',
+  replacement:      'Replacing [Original] due to [reason]',
+  rmaDraftDeletion: '3x follow-ups done or 21 days passed, no customer response, closing, draft [number] deleted',
+};
+
+const CS_INITIALS_STORAGE_KEY = 'csNoteInitials';
+let pendingCsNoteButton = null;
+
+function findCsTeamMember(value) {
+  const key = (value || '').trim().toLowerCase();
+  if (!key) return null;
+  return CS_TEAM.find(m => m.id === key || m.name.toLowerCase() === key) || null;
+}
+
+// The tool has no login, so the user is identified by a personal link (?user=alyanna)
+// or by the initials they picked last time on this browser.
+function resolveCsInitials() {
+  const fromUrl = findCsTeamMember(new URLSearchParams(window.location.search).get('user'));
+  if (fromUrl) return fromUrl.initials;
+  try {
+    return localStorage.getItem(CS_INITIALS_STORAGE_KEY) || '';
+  } catch (err) {
+    return '';
+  }
+}
+
+function saveCsInitials(initials) {
+  try {
+    localStorage.setItem(CS_INITIALS_STORAGE_KEY, initials);
+  } catch (err) {
+    console.error('Could not remember initials: ', err);
+  }
+}
+
+// Month/day in New York time, e.g. 10/19
+function getNewYorkDate() {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    month: 'numeric',
+    day: 'numeric',
+  }).format(new Date());
+}
+
+function flashCopied(button) {
+  const label = button.innerText;
+  button.innerText = '✅ Copied!';
+  button.disabled = true;
+  setTimeout(() => {
+    button.innerText = label;
+    button.disabled = false;
+  }, 1200);
+}
+
+function copyCsNote(button) {
+  const initials = resolveCsInitials();
+  if (!initials) {
+    pendingCsNoteButton = button;
+    openInitialsPicker();
+    return;
+  }
+  const note = `${getNewYorkDate()} ${initials}: ${CS_NOTE_TEMPLATES[button.dataset.note]}`;
+  navigator.clipboard.writeText(note).then(() => {
+    flashCopied(button);
+  }).catch(err => {
+    console.error('Could not copy CS note: ', err);
+  });
+}
+
+function updateInitialsButton() {
+  const initials = resolveCsInitials();
+  document.getElementById('cs-initials-button').innerText = initials ? `👤 ${initials}` : '👤 Set initials';
+}
+
+function openInitialsPicker() {
+  const options = document.getElementById('cs-initials-options');
+  const current = resolveCsInitials();
+  options.innerHTML = '';
+  CS_TEAM.forEach(member => {
+    const btn = document.createElement('button');
+    btn.innerText = member.initials;
+    btn.title = member.name;
+    if (member.initials === current) btn.classList.add('selected');
+    btn.onclick = () => chooseCsInitials(member.initials);
+    options.appendChild(btn);
+  });
+  document.getElementById('cs-initials-custom').value = '';
+  document.getElementById('cs-initials-picker').style.display = 'flex';
+}
+
+function closeInitialsPicker() {
+  pendingCsNoteButton = null;
+  document.getElementById('cs-initials-picker').style.display = 'none';
+}
+
+function chooseCsInitials(initials) {
+  saveCsInitials(initials);
+  // A personal ?user= link would keep overriding the new choice, so drop it
+  const url = new URL(window.location.href);
+  if (url.searchParams.has('user')) {
+    url.searchParams.delete('user');
+    history.replaceState(null, '', url);
+  }
+  updateInitialsButton();
+  const button = pendingCsNoteButton;
+  closeInitialsPicker();
+  if (button) copyCsNote(button);
+}
+
+function applyCustomInitials() {
+  const initials = document.getElementById('cs-initials-custom').value.trim().toUpperCase();
+  if (!/^[A-Z]{2,4}$/.test(initials)) {
+    alert('Please enter 2–4 letters for your initials.');
+    return;
+  }
+  chooseCsInitials(initials);
+}
+
+document.getElementById('cs-initials-custom').addEventListener('keydown', e => {
+  if (e.key === 'Enter') applyCustomInitials();
+});
+
+updateInitialsButton();
