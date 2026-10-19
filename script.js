@@ -2008,7 +2008,7 @@ const CS_NOTE_TEMPLATES = {
 // Copied as-is, without the date and initials prefix
 const CS_PLAIN_NOTES = {
   exchangeToRefund: 'Converted to Refund',
-  refundToExchange: 'Converted to Exchange',
+  refundToExchange: 'Converted to Exchange - Draft [D00000]',
 };
 
 const CS_INITIALS_STORAGE_KEY = 'csNoteInitials';
