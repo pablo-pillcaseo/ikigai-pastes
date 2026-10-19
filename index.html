@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ikigai Pastes</title>
     <!-- Bump ?v= whenever style.css or script.js changes so browsers skip their cached copies -->
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
     <div class="app-header">
@@ -14,6 +14,8 @@
       <button class="cs-note-button" data-note="exchange" onclick="copyCsNote(this)" title="Copy a dated Exchange note to Clipboard">🔁 CS Exchange</button>
       <button class="cs-note-button" data-note="replacement" onclick="copyCsNote(this)" title="Copy a dated Replacement note to Clipboard">📦 CS Replacement</button>
       <button class="cs-note-button" data-note="rmaDraftDeletion" onclick="copyCsNote(this)" title="Copy a dated RMA Draft Deletion note to Clipboard">🗑️ RMA Draft Deletion</button>
+      <button class="cs-note-button" data-note="exchangeToRefund" onclick="copyCsNote(this)" title="Copy &quot;Converted to Refund&quot; to Clipboard">💸 Exchange → Refund</button>
+      <button class="cs-note-button" data-note="refundToExchange" onclick="copyCsNote(this)" title="Copy &quot;Converted to Exchange&quot; to Clipboard">🔄 Refund → Exchange</button>
       <button id="cs-initials-button" onclick="openInitialsPicker()" title="Change the initials used in CS notes">👤 Set initials</button>
     </div>
     <div id="cs-initials-picker" style="display: none;">
@@ -58,6 +60,6 @@
         </div>
       </div>
     </div>
-    <script src="script.js?v=2"></script>
+    <script src="script.js?v=3"></script>
 </body>
 </html>

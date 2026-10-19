@@ -2005,6 +2005,12 @@ const CS_NOTE_TEMPLATES = {
   rmaDraftDeletion: '3x follow-ups done or 21 days passed, no customer response, closing, draft [number] deleted',
 };
 
+// Copied as-is, without the date and initials prefix
+const CS_PLAIN_NOTES = {
+  exchangeToRefund: 'Converted to Refund',
+  refundToExchange: 'Converted to Exchange',
+};
+
 const CS_INITIALS_STORAGE_KEY = 'csNoteInitials';
 let pendingCsNoteButton = null;
 
@@ -2054,6 +2060,15 @@ function flashCopied(button) {
 }
 
 function copyCsNote(button) {
+  const plainNote = CS_PLAIN_NOTES[button.dataset.note];
+  if (plainNote) {
+    navigator.clipboard.writeText(plainNote).then(() => {
+      flashCopied(button);
+    }).catch(err => {
+      console.error('Could not copy CS note: ', err);
+    });
+    return;
+  }
   const initials = resolveCsInitials();
   if (!initials) {
     pendingCsNoteButton = button;
