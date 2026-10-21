@@ -5,18 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ikigai Pastes</title>
     <!-- Bump ?v= whenever style.css or script.js changes so browsers skip their cached copies -->
-    <link rel="stylesheet" href="style.css?v=4">
+    <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
     <div class="app-header">
       <h5>🌸 Ｉｋｉｇａｉ　Ｐａｓｔｅｓ 🌸</h5>
-      <button id="copy-shipping-button" onclick="copyShippingPhrase()" title="Copy &quot;Complimentary Ground Shipping&quot; to Clipboard">🚚 Complimentary Ground Shipping</button>
-      <button class="cs-note-button" data-note="exchange" onclick="copyCsNote(this)" title="Copy a dated Exchange note to Clipboard">🔁 CS Exchange</button>
-      <button class="cs-note-button" data-note="replacement" onclick="copyCsNote(this)" title="Copy a dated Replacement note to Clipboard">📦 CS Replacement</button>
-      <button class="cs-note-button" data-note="rmaDraftDeletion" onclick="copyCsNote(this)" title="Copy a dated RMA Draft Deletion note to Clipboard">🗑️ RMA Draft Deletion</button>
-      <button class="cs-note-button" data-note="exchangeToRefund" onclick="copyCsNote(this)" title="Copy &quot;Converted to Refund&quot; to Clipboard">💸 Exchange → Refund</button>
-      <button class="cs-note-button" data-note="refundToExchange" onclick="copyCsNote(this)" title="Copy &quot;Converted to Exchange - Draft [D00000]&quot; to Clipboard">🔄 Refund → Exchange</button>
-      <button id="cs-initials-button" onclick="openInitialsPicker()" title="Change the initials used in CS notes">👤 Set initials</button>
+      <div class="header-button-rows">
+        <div class="header-button-row">
+          <span class="header-row-label">Quick copy</span>
+          <button id="copy-shipping-button" onclick="copyShippingPhrase()" title="Copy &quot;Complimentary Ground Shipping&quot; to Clipboard">🚚 Complimentary Ground Shipping</button>
+          <button class="cs-note-button" data-note="exchangeTag" onclick="copyCsNote(this)" title="Copy &quot;EXCHANGE&quot; to Clipboard">🏷️ EXCHANGE</button>
+          <button class="cs-note-button" data-note="replacementTag" onclick="copyCsNote(this)" title="Copy &quot;REPLACEMENT&quot; to Clipboard">🏷️ REPLACEMENT</button>
+        </div>
+        <div class="header-button-row">
+          <span class="header-row-label">CS notes</span>
+          <button class="cs-note-button" data-note="exchange" onclick="copyCsNote(this)" title="Copy a dated Exchange note to Clipboard">🔁 CS Exchange</button>
+          <button class="cs-note-button" data-note="replacement" onclick="copyCsNote(this)" title="Copy a dated Replacement note to Clipboard">📦 CS Replacement</button>
+          <button class="cs-note-button" data-note="rmaDraftDeletion" onclick="copyCsNote(this)" title="Copy a dated RMA Draft Deletion note to Clipboard">🗑️ RMA Draft Deletion</button>
+          <button class="cs-note-button" data-note="exchangeToRefund" onclick="copyCsNote(this)" title="Copy &quot;Converted to Refund&quot; to Clipboard">💸 Exchange → Refund</button>
+          <button class="cs-note-button" data-note="refundToExchange" onclick="copyCsNote(this)" title="Copy &quot;Converted to Exchange - Draft [D00000]&quot; to Clipboard">🔄 Refund → Exchange</button>
+          <button id="cs-initials-button" onclick="openInitialsPicker()" title="Change the initials used in CS notes">👤 Set initials</button>
+        </div>
+      </div>
     </div>
     <div id="cs-initials-picker" style="display: none;">
       <span id="cs-initials-prompt">Who's copying this note? Pick your initials:</span>
@@ -60,6 +70,6 @@
         </div>
       </div>
     </div>
-    <script src="script.js?v=4"></script>
+    <script src="script.js?v=5"></script>
 </body>
 </html>

@@ -2009,6 +2009,8 @@ const CS_NOTE_TEMPLATES = {
 const CS_PLAIN_NOTES = {
   exchangeToRefund: 'Converted to Refund',
   refundToExchange: 'Converted to Exchange - Draft [D00000]',
+  exchangeTag: 'EXCHANGE',
+  replacementTag: 'REPLACEMENT',
 };
 
 const CS_INITIALS_STORAGE_KEY = 'csNoteInitials';

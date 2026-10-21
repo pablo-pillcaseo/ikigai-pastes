@@ -123,6 +123,34 @@
   margin: 0;
 }
 
+.header-button-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.header-button-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Fixed width so both rows' buttons start at the same point */
+.header-row-label {
+  width: 80px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+@media (max-width: 600px) {
+  .header-row-label {
+    width: 100%;
+  }
+}
+
 #copy-shipping-button,
 .cs-note-button,
 #cs-initials-button {
