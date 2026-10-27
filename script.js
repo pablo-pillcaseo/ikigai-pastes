@@ -2009,6 +2009,7 @@ const CS_NOTE_TEMPLATES = {
 const CS_PLAIN_NOTES = {
   exchangeToRefund: 'Converted to Refund',
   refundToExchange: 'Converted to Exchange - Draft [D00000]',
+  priorityShipping: 'Complimentary Priority Shipping',
   exchangeTag: 'EXCHANGE',
   replacementTag: 'REPLACEMENT',
 };

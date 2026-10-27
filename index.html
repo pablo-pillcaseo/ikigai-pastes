@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ikigai Pastes</title>
     <!-- Bump ?v= whenever style.css or script.js changes so browsers skip their cached copies -->
-    <link rel="stylesheet" href="style.css?v=5">
+    <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
     <div class="app-header">
@@ -14,6 +14,7 @@
         <div class="header-button-row">
           <span class="header-row-label">Quick copy</span>
           <button id="copy-shipping-button" onclick="copyShippingPhrase()" title="Copy &quot;Complimentary Ground Shipping&quot; to Clipboard">🚚 Complimentary Ground Shipping</button>
+          <button class="cs-note-button" data-note="priorityShipping" onclick="copyCsNote(this)" title="Copy &quot;Complimentary Priority Shipping&quot; to Clipboard">✈️ Complimentary Priority Shipping</button>
           <button class="cs-note-button" data-note="exchangeTag" onclick="copyCsNote(this)" title="Copy &quot;EXCHANGE&quot; to Clipboard">🏷️ EXCHANGE</button>
           <button class="cs-note-button" data-note="replacementTag" onclick="copyCsNote(this)" title="Copy &quot;REPLACEMENT&quot; to Clipboard">🏷️ REPLACEMENT</button>
         </div>
@@ -70,6 +71,6 @@
         </div>
       </div>
     </div>
-    <script src="script.js?v=5"></script>
+    <script src="script.js?v=6"></script>
 </body>
 </html>
