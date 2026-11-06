@@ -2003,12 +2003,13 @@ const CS_NOTE_TEMPLATES = {
   exchange:         'Exchange from [Original] to [New item]',
   replacement:      'Replacing [Original] due to [reason]',
   rmaDraftDeletion: '3x follow-ups done or 21 days passed, no customer response, closing, draft [number] deleted',
+  exchangeToRefund: 'Converted to Refund',
+  refundToExchange: 'Converted to Exchange - Draft D00000',
+  toGiftCard:       'Converted to Gift Card',
 };
 
 // Copied as-is, without the date and initials prefix
 const CS_PLAIN_NOTES = {
-  exchangeToRefund: 'Converted to Refund',
-  refundToExchange: 'Converted to Exchange - Draft [D00000]',
   priorityShipping: 'Complimentary Priority Shipping',
   exchangeTag: 'EXCHANGE',
   replacementTag: 'REPLACEMENT',
