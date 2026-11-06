@@ -1969,24 +1969,6 @@ function copySKU() {
 }
 
 // ============================================================
-// COPY SHIPPING PHRASE
-// ============================================================
-
-const SHIPPING_PHRASE = 'Complimentary Ground Shipping';
-const SHIPPING_BUTTON_LABEL = '🚚 ' + SHIPPING_PHRASE;
-
-function copyShippingPhrase() {
-  const button = document.getElementById('copy-shipping-button');
-  navigator.clipboard.writeText(SHIPPING_PHRASE).then(() => {
-    if (!button) return;
-    button.innerText = '✅ Copied!';
-    setTimeout(() => { button.innerText = SHIPPING_BUTTON_LABEL; }, 1200);
-  }).catch(err => {
-    console.error('Could not copy shipping phrase: ', err);
-  });
-}
-
-// ============================================================
 // COPY CS NOTES
 // ============================================================
 
@@ -2010,7 +1992,6 @@ const CS_NOTE_TEMPLATES = {
 
 // Copied as-is, without the date and initials prefix
 const CS_PLAIN_NOTES = {
-  priorityShipping: 'Complimentary Priority Shipping',
   exchangeTag: 'EXCHANGE',
   replacementTag: 'REPLACEMENT',
 };
